@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Impossible Dart Pro (Extreme)</title>
+    <title>Impossible Dart Pro: Extreme</title>
     <style>
-        body { margin: 0; padding: 0; background: #121212; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body { margin: 0; padding: 0; background: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         h1 { margin: 20px 0 10px; color: #ff5252; text-shadow: 0 0 10px rgba(255,82,82,0.5); }
-        #game-container { position: relative; display: flex; gap: 20px; padding: 20px; }
-        #canvas-wrapper { position: relative; width: 600px; height: 600px; border-radius: 50%; border: 10px solid #222; box-shadow: 0 0 30px rgba(0,0,0,0.8); overflow: hidden; }
-        canvas { background: #1a1a1a; cursor: none; }
+        #game-container { position: relative; display: flex; gap: 20px; padding: 20px; flex-wrap: wrap; justify-content: center; }
+        #canvas-wrapper { position: relative; width: 600px; height: 600px; border-radius: 50%; border: 10px solid #222; box-shadow: 0 0 30px rgba(0,0,0,0.8); overflow: hidden; background: #1a1a1a; }
+        canvas { cursor: none; }
         #hud { display: flex; flex-direction: column; gap: 15px; width: 250px; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; }
         .hud-item { font-size: 1.1em; font-weight: bold; padding: 10px; border-radius: 8px; border: 1px solid transparent;}
         #darts-left { background: rgba(33, 150, 243, 0.1); border-color: #2196f3; color: #2196f3; text-align: center; font-size: 2em;}
         #wind-status { background: rgba(255, 82, 82, 0.1); border-color: #ff5252; color: #ff5252; font-weight: normal;}
         input, button { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2c2c2c; color: white; font-size: 1em; width: 100%; box-sizing: border-box;}
-        button { background: #ff5252; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: auto; }
+        button { background: #ff5252; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 5px; }
         button:hover { background: #ff7b7b; }
-        #leaderboard { width: 100%; max-width: 870px; margin-top: 20px; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        #leaderboard { width: 100%; max-width: 870px; margin-top: 20px; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 50px;}
         #leaderboard h2 { margin-top: 0; color: #ffc107; border-bottom: 2px solid #333; padding-bottom: 10px; }
         #rankList { list-style: none; padding: 0; margin: 0; }
         #rankList li { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #2a2a2a; }
@@ -26,7 +26,7 @@
 </head>
 <body>
     <h1>🎯 Impossible Dart Pro: Extreme</h1>
-    <p style="color: #aaa; margin: 0 0 20px;">바람과 떨림을 뚫고 10발 안에 전설이 되세요.</p>
+    <p style="color: #aaa; margin: 0 0 20px;">바람과 손떨림을 극복하세요. 10발 안에 랭킹에 도전하세요!</p>
     
     <div id="game-container">
         <div id="canvas-wrapper">
@@ -41,31 +41,32 @@
             <div id="game-over-zone" style="display:none; flex-direction:column; gap:10px;">
                 <input type="text" id="playerName" placeholder="닉네임 (3자 이상)">
                 <button id="submitBtn" onclick="submitScore()">랭킹 등록</button>
-                <button style="background:#444;" onclick="resetGame()">다시 도전</button>
+                <button style="background:#444;" onclick="location.reload()">다시 도전</button>
             </div>
         </div>
     </div>
     
     <div id="leaderboard">
         <h2>🏆 실시간 전설의 전당 (Top 10)</h2>
-        <ul id="rankList"></ul>
+        <ul id="rankList">데이터를 불러오는 중...</ul>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // 질문자님의 Firebase 정보를 여기에 다 넣었습니다!
+        // 1. 여기에 본인의 Firebase 정보를 정확히 입력하세요!
         const firebaseConfig = {
             apiKey: "AIzaSyC4cS9GhEAz32y9k11o5B950mbWxULZ1BY",
             authDomain: "eden-dc2c5.firebaseapp.com",
-            databaseURL: "https://eden-dc2c5-default-rtdb.firebaseio.com",
-            projectId: "eden-dc2c5",
+            projectId: "eden-dc2c5", // 본인의 프로젝트 ID로 꼭 확인!
+            databaseURL: "https://eden-dc2c5-default-rtdb.firebaseio.com", // ★여기가 중요합니다!
             storageBucket: "eden-dc2c5.firebasestorage.app",
             messagingSenderId: "889059945973",
             appId: "1:889059945973:web:211078b67f46e6796d04bc"
         };
 
+        // Firebase 초기화
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -80,13 +81,11 @@
 
         function drawBoard() {
             ctx.clearRect(0, 0, 600, 600);
-            ctx.save();
-            ctx.translate(300, 300);
+            ctx.save(); ctx.translate(300, 300);
             targetRotation += rotationSpeed;
             if(Math.random() < 0.02) rotationSpeed = (Math.random() - 0.5) * 0.15;
             ctx.rotate(targetRotation);
             
-            // 다트판 그리기 로직
             ctx.beginPath(); ctx.arc(0, 0, 290, 0, Math.PI * 2); ctx.fillStyle = '#1a1a1a'; ctx.fill();
             const ringRadii = [280, 260, 180, 160];
             ringRadii.forEach((r, i) => {
@@ -110,7 +109,8 @@
 
         function changeWind() {
             if (isGameOver) return;
-            const dir = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'][Math.floor(Math.random() * 8)];
+            const dirs = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
+            const dir = dirs[Math.floor(Math.random() * 8)];
             const s = Math.floor(Math.random() * 50) + 10;
             wind.x = dir.includes('동') ? s : (dir.includes('서') ? -s : 0);
             wind.y = dir.includes('남') ? s : (dir.includes('북') ? -s : 0);
@@ -135,26 +135,44 @@
             if (dartsLeft <= 0) endGame();
         });
 
-        function endGame() { isGameOver = true; document.getElementById('game-over-zone').style.display = 'flex'; }
-        function resetGame() { location.reload(); }
+        function endGame() { 
+            isGameOver = true; 
+            document.getElementById('game-over-zone').style.display = 'flex'; 
+            fakeCursor.style.display = 'none';
+        }
 
         function submitScore() {
-            const name = document.getElementById('playerName').value;
+            const name = document.getElementById('playerName').value.trim();
             if (name.length < 3) return alert("닉네임을 3자 이상 입력하세요.");
-            db.ref('rankingPro/').push({ name, score, date: Date.now() }).then(() => {
-                alert("등록 완료!");
+            
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerText = "등록 중...";
+
+            db.ref('rankingPro/').push({
+                name: name,
+                score: score,
+                date: Date.now()
+            }).then(() => {
+                alert("기록이 전설의 전당에 등록되었습니다!");
                 document.getElementById('game-over-zone').style.display = 'none';
+            }).catch((err) => {
+                alert("등록 실패: " + err.message + "\nFirebase Database의 Rules(규칙)를 확인하세요!");
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').innerText = "랭킹 등록";
             });
         }
 
+        // 실시간 랭킹 리스너
         db.ref('rankingPro/').orderByChild('score').limitToLast(10).on('value', (snap) => {
             const list = document.getElementById('rankList');
             list.innerHTML = '';
             let items = [];
             snap.forEach(c => items.push(c.val()));
             items.reverse().forEach((d, i) => {
-                list.innerHTML += `<li><span>#${i+1} ${d.name}</span><span>${d.score}점</span></li>`;
+                const date = new Date(d.date).toLocaleDateString('ko-KR');
+                list.innerHTML += `<li><span><b>#${i+1}</b> ${d.name}</span><span><b>${d.score}점</b> (${date})</span></li>`;
             });
+            if(items.length === 0) list.innerHTML = "<li>아직 등록된 전설이 없습니다!</li>";
         });
 
         changeWind(); update();

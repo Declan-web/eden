@@ -163,9 +163,11 @@
         };
         function windTick() { if(over) return; wx = (Math.random()-0.5)*50; wy = (Math.random()-0.5)*50; document.getElementById('wind-indicator').innerText = `WIND: ${Math.abs(Math.floor(wx))}m/s`; setTimeout(windTick, 2500); }
 
-        /* --- 슬롯머신 로직 --- */
+        /* --- 슬롯머신 로직 (성공 확률 100% 보정) --- */
         const slotItems = ['♠','◆','♥','♣','●','■']; 
-        const weightedPool = ['♠','♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','●','●','●','●','●','●','●','■','■','■','■','■','■','■','■','■','■'];
+        // 테스트를 위해 모든 풀을 스페이드로 통일
+        const weightedPool = ['♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠']; 
+
         function initReels() {
             for(let i=1; i<=4; i++) {
                 const reel = document.getElementById('reel'+i); reel.innerHTML = '';
@@ -180,15 +182,18 @@
         let currentWinC = 0;
         function spinSlot() {
             document.getElementById('slot-over-ui').style.display = 'none';
-            document.getElementById('slot-msg').innerText = "ROLLING⋯⋯";
+            document.getElementById('slot-msg').innerText = "ROLLING...";
             const btn = document.getElementById('spin-btn'); btn.disabled = true;
             const res = [];
+            
+            // 모든 릴이 무조건 동일한 결과를 내도록 설정
+            const forcedResult = weightedPool[0]; 
+
             for(let i=1; i<=4; i++) {
                 const reel = document.getElementById('reel'+i);
-                const final = weightedPool[Math.floor(Math.random()*weightedPool.length)];
-                res.push(final);
-                reel.lastElementChild.innerText = final;
-                reel.lastElementChild.className = 'slot-item' + (final === '◆' ? ' diamond-item' : '');
+                res.push(forcedResult); 
+                reel.lastElementChild.innerText = forcedResult;
+                reel.lastElementChild.className = 'slot-item' + (forcedResult === '◆' ? ' diamond-item' : '');
                 reel.style.transition = "none"; reel.style.top = "0px";
                 void reel.offsetWidth; 
                 reel.style.transition = `top ${2 + (i-1)*0.4}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
@@ -215,7 +220,7 @@
             }, 3500);
         }
 
-        /* --- 기록 저장 (완벽 수리) --- */
+        /* --- 기록 저장 --- */
         function saveResult(type) {
             const nickId = (type === 'dart') ? 'nick-dart' : 'slot-nick';
             const btnId = (type === 'dart') ? 'save-dart-btn' : 'save-slot-btn';
@@ -233,7 +238,6 @@
 
             const path = (type === 'dart') ? 'rankingPro' : 'slotRanking_v3';
 
-            // .push().set() 구조를 명확히 하여 데이터 누락 방지
             db.ref(path).push().set(data, (error) => {
                 if (error) {
                     alert("기록 실패: " + error.message);
@@ -256,7 +260,6 @@
             if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove();
         }
 
-        // 랭킹 리스너
         db.ref('rankingPro').on('value', (snap) => {
             const list = document.getElementById('rankList'); list.innerHTML = '';
             let arr = []; 

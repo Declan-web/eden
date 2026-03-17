@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <title>CASINO EDEN</title>
     <style>
-        /* 이전의 깔끔한 디자인으로 복구 */
         body { 
             margin: 0; background-color: #121212; color: white; 
             font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; 
         }
         
-        /* 제목만 명조체로 적용 */
         h1 { 
             color: #ffcc00; font-size: 3em; margin-top: 40px; margin-bottom: 5px;
             font-family: 'Batang', 'Gungsuh', serif; 
@@ -20,7 +18,6 @@
 
         #game-container { display: flex; gap: 20px; align-items: flex-start; }
         
-        /* 다트판 규격 수정본 유지 */
         #canvas-wrapper { 
             position: relative; width: 600px; height: 600px; border-radius: 50%; 
             border: 10px solid #222; overflow: hidden; cursor: none; background: #000;
@@ -32,7 +29,7 @@
         }
         
         .stat-box { margin-bottom: 20px; }
-        .label { color: #aaa; font-size: 0.8em; margin-bottom: 5px; }
+        .label { color: #aaa; font-size: 0.8em; margin-bottom: 5px; text-transform: uppercase; }
         .val { font-size: 2em; font-weight: bold; color: #4da6ff; }
         #total-score { color: #ffcc00; }
 
@@ -43,12 +40,10 @@
         button { width: 100%; padding: 10px; background: #4da6ff; border: none; color: white; font-weight: bold; cursor: pointer; }
         button:hover { background: #357abd; }
 
-        /* 명예의 전당 스타일 복구 */
         #leaderboard { width: 890px; margin: 40px 0; background: #1e1e1e; padding: 25px; border-radius: 10px; }
         .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .board-header h2 { margin: 0; color: #ffcc00; }
         
-        /* 초기화 버튼 스타일 (명예의 전당 옆) */
         #admin-reset-btn { width: auto; padding: 5px 10px; font-size: 0.7em; background: #333; color: #666; }
         #admin-reset-btn:hover { background: #444; color: #ff4d4d; }
 
@@ -69,21 +64,21 @@
         </div>
         <div id="hud">
             <div class="stat-box">
-                <div class="label">남은 다트</div>
+                <div class="label">Darts Remaining</div>
                 <div id="darts-val" class="val">10</div>
             </div>
             <div class="stat-box">
-                <div class="label">누적 점수</div>
+                <div class="label">Total Score</div>
                 <div id="total-score" class="val">0</div>
             </div>
             <div class="stat-box">
-                <div class="label">이번 점수</div>
+                <div class="label">Last Hit</div>
                 <div id="hit-val" class="val">0</div>
             </div>
-            <div id="wind-indicator">바람 계산 중...</div>
+            <div id="wind-indicator">Calculating Wind...</div>
             <div id="over-ui">
-                <input type="text" id="nick" placeholder="닉네임">
-                <button onclick="saveResult()">기록 등록</button>
+                <input type="text" id="nick" placeholder="NICKNAME">
+                <button onclick="saveResult()">RECORD LEGACY</button>
             </div>
         </div>
     </div>
@@ -91,9 +86,9 @@
     <div id="leaderboard">
         <div class="board-header">
             <h2>🏆 실시간 전설의 전당 (Top 10)</h2>
-            <button id="admin-reset-btn" onclick="adminReset()">기록 초기화</button>
+            <button id="admin-reset-btn" onclick="adminReset()">RESET DATA</button>
         </div>
-        <ul id="rankList">데이터 로딩 중...</ul>
+        <ul id="rankList">Syncing Data...</ul>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -109,7 +104,7 @@
         const cvs = document.getElementById('dartBoard');
         const ctx = cvs.getContext('2d');
         const img = new Image();
-        img.src = 'image_6.png'; // 깃허브 로컬 파일
+        img.src = 'image_6.png';
 
         let score = 0, darts = 10, over = false;
         let mx = 300, my = 300, rot = 0, wx = 0, wy = 0;
@@ -153,19 +148,19 @@
 
         function saveResult() {
             const n = document.getElementById('nick').value;
-            if(!n) return alert("이름을 입력하세요!");
+            // 이름 길이 제한 삭제: 한 글자 이상이면 무조건 통과
+            if(!n) return alert("Please enter your name!");
             db.ref('rankingPro').push({name:n, score:score}).then(() => location.reload());
         }
 
-        // 초기화 버튼: 비밀번호 확인 후 전체 삭제
         function adminReset() {
-            const pw = prompt("관리자 패스워드를 입력하세요.");
+            const pw = prompt("Enter Admin Password.");
             if(pw === "1119") {
-                if(confirm("정말로 모든 명예의 전당 기록을 삭제하시겠습니까?")) {
-                    db.ref('rankingPro').remove().then(() => alert("모든 기록이 삭제되었습니다."));
+                if(confirm("Delete all records?")) {
+                    db.ref('rankingPro').remove().then(() => alert("Data cleared."));
                 }
             } else {
-                alert("비밀번호가 틀렸습니다.");
+                alert("Incorrect Password.");
             }
         }
 
@@ -178,7 +173,7 @@
             arr.slice(0,10).forEach((v, i) => {
                 list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
             });
-            if(arr.length === 0) list.innerHTML = "<li>등록된 기록이 없습니다.</li>";
+            if(arr.length === 0) list.innerHTML = "<li>No records found.</li>";
         });
     </script>
 </body>

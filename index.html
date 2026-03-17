@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impossible Dart Pro (Extreme)</title>
+    <style>
+        body { margin: 0; padding: 0; background: #121212; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        h1 { margin: 20px 0 10px; color: #ff5252; text-shadow: 0 0 10px rgba(255,82,82,0.5); }
+        
+        #game-container { position: relative; display: flex; gap: 20px; padding: 20px; }
+        
+        /* 다트판 컨테이너: 회전 효과를 위한 부모 */
+        #canvas-wrapper { position: relative; width: 600px; height: 600px; border-radius: 50%; border: 10px solid #222; box-shadow: 0 0 30px rgba(0,0,0,0.8); overflow: hidden; }
+        canvas { background: #1a1a1a; cursor: none; } /* 커서를 숨기고 가짜 커서를 사용 */
+        
+        /* 정보 표시창 */
+        #hud { display: flex; flex-direction: column; gap: 15px; width: 250px; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        .hud-item { font-size: 1.1em; font-weight: bold; padding: 10px; border-radius: 8px; border: 1px solid transparent;}
+        
+        /* 상태별 색상 */
+        #darts-left { background: rgba(33, 150, 243, 0.1); border-color: #2196f3; color: #2196f3; text-align: center; font-size: 2em;}
+        #current-score { background: rgba(76, 175, 80, 0.1); border-color: #4caf50; color: #4caf50; }
+        #total-score { background: rgba(255, 193, 7, 0.1); border-color: #ffc107; color: #ffc107; }
+        #wind-status { background: rgba(255, 82, 82, 0.1); border-color: #ff5252; color: #ff5252; font-weight: normal;}
+
+        /* 버튼 및 입력창 */
+        input, button { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2c2c2c; color: white; font-size: 1em; width: 100%; box-sizing: border-box;}
+        button { background: #ff5252; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: auto; }
+        button:hover { background: #ff7b7b; }
+        button:disabled { background: #444; cursor: not-allowed; }
+
+        /* 랭킹판 */
+        #leaderboard { width: 100%; max-width: 870px; margin-top: 20px; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        #leaderboard h2 { margin-top: 0; color: #ffc107; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        #rankList { list-style: none; padding: 0; margin: 0; }
+        #rankList li { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #2a2a2a; }
+        #rankList li:nth-child(1) { color: #ffc107; font-weight: bold; background: rgba(255,193,7,0.05);}
+        #rankList li:nth-child(2) { color: #c0c0c0; }
+        #rankList li:nth-child(3) { color: #cd7f32; }
+
+        /* 가짜 커서 (손떨림 구현용) */
+        #fake-cursor { position: absolute; width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 10; mix-blend-mode: difference; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Impossible Dart Pro: Extreme</h1>
+    <p style="color: #aaa; margin: 0 0 20px;">당신을 미치게 할 극악의 난이도. 10발 안에 전설이 되세요.</p>
+    
+    <div id="game-container">
+        <div id="canvas-wrapper">
+            <div id="fake-cursor"></div>
+            <canvas id="dartBoard" width="600" height="600"></canvas>
+        </div>
+        
+        <div id="hud">
+            <div id="darts-left" class="hud-item">10</div>
+            <div class="hud-item">현재 점수: <span id="current-score-val">0</span></div>
+            <div class="hud-item">누적 점수: <span id="total-score-val">0</span></div>
+            <div id="wind-status" class="hud-item">
+                <div style="font-weight:bold; margin-bottom:5px;">강풍 주의보</div>
+                <div id="wind-desc">로딩 중...</div>
+            </div>
+            
+            <div id="game-over-zone" style="display:none; flex-direction:column; gap:10px; margin-top:10px;">
+                <input type="text" id="playerName" placeholder="닉네임 입력 (3자 이상)" maxlength="10">
+                <button id="submitBtn" onclick="submitScore()">랭킹 등록</button>
+                <button style="background:#444;" onclick="resetGame()">다시 도전</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="leaderboard">
+        <h2>🏆 실시간 전설의 전당 (Top 10)</h2>
+        <ul id="rankList"><li>게임을 플레이하여 랭킹을 등록하세요!</li></ul>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // --- 1. Firebase 설정 (본인의 프로젝트 값으로 교체 필수!) ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // ------------------------------------------------------------
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- 2. 게임 변수 및 설정 ---
+        const canvas = document.getElementById('dartBoard');
+        const ctx = canvas.getContext('2d');
+        const wrapper = document.getElementById('canvas-wrapper');
+        const fakeCursor = document.getElementById('fake-cursor');
+        
+        // 시스템 변수
+        let score = 0;
+        let dartsLeft = 10;
+        let isGameOver = false;
+        let mouseX = 300, mouseY = 300;
+        let finalX = 300, finalY = 300; // 떨림이 반영된 실제 타겟
+
+        // [방해 요소] 설정값
+        let targetRotation = 0; // 현재 다트판 회전각
+        let rotationSpeed = 0.05; // 회전 속도 (계속 변함)
+        let wind = { x: 0, y: 0, desc: "고요함" };
+        const SHAKE_INTENSITY = 80; // 손떨림 강도 (0~100)
+
+        // 세련된 색상 팔레트
+        const COLORS = {
+            bg: '#1a1a1a',
+            rings: ['#000000', '#f44336', '#000000', '#f44336'], // Double, Single, Triple, Single
+            bull: '#ffc107',
+            bullEye: '#ff5252',
+            lines: '#333'
+        };
+
+        // --- 3. 게임 로직 및 그리기 ---
+
+        function drawBoard() {
+            ctx.clearRect(0, 0, 600, 600);
+            
+            ctx.save();
+            ctx.translate(300, 300);
+            
+            // [방해] 다트판 회전 적용
+            targetRotation += rotationSpeed;
+            if(Math.random() < 0.02) rotationSpeed = (Math.random() - 0.5) * 0.15; // 랜덤하게 회전 방향/속도 변경
+            ctx.rotate(targetRotation);
+
+            // 1. 기본 배경
+            ctx.beginPath();
+            ctx.arc(0, 0, 290, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.bg;
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 2. 고리들 (점수 영역)
+            const ringRadii = [280, 260, 180, 160]; // Double ring out, Triple ring in 등
+            ringRadii.forEach((r, i) => {
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                ctx.fillStyle = COLORS.rings[i % 2];
+                ctx.fill();
+            });
+
+            // 3. 싱글 영역 꽉 채우기
+            ctx.beginPath();
+            ctx.arc(0, 0, 160, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.bg;
+            ctx.fill();
+
+            // 4. 구획선 및 점수 (20조각)
+            ctx.strokeStyle = COLORS.lines;
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 20; i++) {
+                const angle = (i * 18) * Math.PI / 180;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(angle) * 280, Math.sin(angle) * 280);
+                ctx.stroke();
+            }
+
+            // 5. 불스아이 (정중앙)
+            ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.bull; ctx.fill(); // Outer Bull
+            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS.bullEye; ctx.fill(); // Bull's Eye
+
+            ctx.restore(); // 회전 상태 복원
+        }
+
+        function updateGame() {
+            if (isGameOver) return;
+
+            // [방해] 극심한 손떨림 (Noise) 계산
+            const noiseX = (Math.random() - 0.5) * SHAKE_INTENSITY;
+            const noiseY = (Math.random() - 0.5) * SHAKE_INTENSITY;
+
+            // 최종 타겟 위치 = 마우스 위치 + 떨림
+            finalX = mouseX + noiseX;
+            finalY = mouseY + noiseY;
+
+            // 가짜 커서 위치 업데이트
+            fakeCursor.style.left = finalX + 'px';
+            fakeCursor.style.top = finalY + 'px';
+
+            drawBoard();
+            requestAnimationFrame(updateGame);
+        }
+
+        // [방해] 랜덤 바람 생성 (3~7초마다)
+        function changeWind() {
+            if (isGameOver) return;
+            const directions = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
+            const dir = directions[Math.floor(Math.random() * directions.length)];
+            const speed = Math.floor(Math.random() * 50) + 10; // 10~60
+
+            // 바람이 미치는 영향력 (X, Y 좌표 피드백)
+            wind.x = 0; wind.y = 0;
+            if (dir.includes('동')) wind.x = speed * 1.2;
+            if (dir.includes('서')) wind.x = -speed * 1.2;
+            if (dir.includes('남')) wind.y = speed * 1.2;
+            if (dir.includes('북')) wind.y = -speed * 1.2;
+
+            document.getElementById('wind-desc').innerHTML = `<b>${dir}풍</b> (${speed}m/s)<br>커서가 밀립니다!`;
+            
+            // 색상 경고 (바람이 세면 더 붉게)
+            const danger = Math.min(1, speed / 60);
+            document.getElementById('wind-status').style.backgroundColor = `rgba(255, 82, 82, ${danger * 0.3})`;
+
+            setTimeout(changeWind, Math.random() * 4000 + 3000); // 3~7초
+        }
+
+        // --- 4. 이벤트 핸들링 ---
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (isGameOver || dartsLeft <= 0) return;
+
+            // [방해 적용] 최종 클릭 좌표 = 떨림 좌표 + 바람 영향
+            const shotX = finalX + wind.x;
+            const shotY = finalY + wind.y;
+
+            // 점수 계산 (중앙 300, 300 기준)
+            const dist = Math.sqrt((shotX - 300)**2 + (shotY - 300)**2);
+            let shotScore = 0;
+
+            if (dist <= 10) shotScore = 100; // Bull's Eye
+            else if (dist <= 25) shotScore = 50; // Outer Bull
+            else if (dist > 280) shotScore = 0; // Off the board
+            else {
+                // 기본 싱글 점수 (거리 기반, 극악)
+                shotScore = Math.max(1, Math.floor((280 - dist) / 5)); 
+            }
+
+            // 애니메이션 효과 (클릭한 곳 표시)
+            ctx.beginPath(); ctx.arc(shotX, shotY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff'; ctx.fill();
+
+            // HUD 업데이트
+            score += shotScore;
+            dartsLeft--;
+
+            document.getElementById('current-score-val').innerText = shotScore;
+            document.getElementById('total-score-val').innerText = score;
+            document.getElementById('darts-left').innerText = dartsLeft;
+
+            // 10발 다 쐈을 때
+            if (dartsLeft <= 0) {
+                endGame();
+            }
+        });
+
+        // --- 5. 게임 상태 관리 및 Firebase 연동 ---
+
+        function startGame() {
+            resetGameParams();
+            changeWind();
+            updateGame();
+            loadRankings();
+        }
+
+        function resetGameParams() {
+            score = 0;
+            dartsLeft = 10;
+            isGameOver = false;
+            document.getElementById('total-score-val').innerText = '0';
+            document.getElementById('darts-left').innerText = '10';
+            document.getElementById('game-over-zone').style.display = 'none';
+            fakeCursor.style.display = 'block';
+        }
+
+        function endGame() {
+            isGameOver = true;
+            fakeCursor.style.display = 'none';
+            document.getElementById('darts-left').innerText = "FIN";
+            document.getElementById('darts-left').style.color = "#ff5252";
+            document.getElementById('game-over-zone').style.display = 'flex';
+            alert(`게임 종료! 최종 점수: ${score}점`);
+        }
+
+        function resetGame() {
+            document.getElementById('darts-left').style.color = "#2196f3";
+            resetGameParams();
+            updateGame();
+        }
+
+        // Firebase에 점수 등록
+        function submitScore() {
+            const name = document.getElementById('playerName').value.trim();
+            if (name.length < 3) {
+                alert("닉네임을 3자 이상 입력해주세요.");
+                return;
+            }
+
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerText = "등록 중...";
+
+            db.ref('rankingPro/').push({
+                name: name,
+                score: score,
+                date: firebase.database.ServerValue.TIMESTAMP
+            }, (error) => {
+                if (error) {
+                    alert("점수 등록 실패: " + error.message);
+                } else {
+                    alert("전설의 전당에 등극했습니다!");
+                    document.getElementById('playerName').value = "";
+                    document.getElementById('game-over-zone').style.display = 'none';
+                }
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').innerText = "랭킹 등록";
+            });
+        }
+
+        // Firebase에서 실시간 랭킹 로드 (Top 10)
+        function loadRankings() {
+            db.ref('rankingPro/').orderByChild('score').limitToLast(10).on('value', (snapshot) => {
+                const rankList = document.getElementById('rankList');
+                rankList.innerHTML = '';
+                
+                let ranks = [];
+                snapshot.forEach((child) => {
+                    ranks.push(child.val());
+                });
+                
+                // 내림차순 정렬
+                ranks.reverse();
+
+                if (ranks.length === 0) {
+                    rankList.innerHTML = '<li>아직 등록된 전설이 없습니다. 첫 번째 전설이 되어보세요!</li>';
+                    return;
+                }
+
+                ranks.forEach((data, index) => {
+                    const li = document.createElement('li');
+                    const date = new Date(data.date).toLocaleDateString('ko-KR');
+                    li.innerHTML = `
+                        <span><b>#${index + 1}</b> ${data.name}</span>
+                        <span><b>${data.score}점</b> (${date})</span>
+                    `;
+                    rankList.appendChild(li);
+                });
+            });
+        }
+
+        // 초기 실행
+        startGame();
+
+    </script>
+</body>
+</html>

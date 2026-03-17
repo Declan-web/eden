@@ -3,31 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Impossible Dart Pro: Extreme</title>
+    <title>CASINO EDEN - Dart Game</title>
     <style>
         body { margin: 0; padding: 0; background: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        h1 { margin: 20px 0 10px; color: #ff5252; text-shadow: 0 0 10px rgba(255,82,82,0.5); }
-        #game-container { position: relative; display: flex; gap: 20px; padding: 20px; flex-wrap: wrap; justify-content: center; }
-        #canvas-wrapper { position: relative; width: 600px; height: 600px; border-radius: 50%; border: 10px solid #222; box-shadow: 0 0 30px rgba(0,0,0,0.8); overflow: hidden; background: #1a1a1a; }
-        canvas { cursor: none; }
-        #hud { display: flex; flex-direction: column; gap: 15px; width: 250px; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; }
-        .hud-item { font-size: 1.1em; font-weight: bold; padding: 10px; border-radius: 8px; border: 1px solid transparent;}
-        #darts-left { background: rgba(33, 150, 243, 0.1); border-color: #2196f3; color: #2196f3; text-align: center; font-size: 2em;}
-        #wind-status { background: rgba(255, 82, 82, 0.1); border-color: #ff5252; color: #ff5252; font-weight: normal;}
+        h1 { margin: 20px 0 10px; color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+        #description { color: #aaa; margin: 0 0 20px; text-align: center; max-width: 80%; }
+        #game-container { position: relative; display: flex; gap: 20px; padding: 20px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+        #canvas-wrapper { position: relative; width: 600px; height: 600px; border-radius: 50%; border: 15px solid #333; box-shadow: 0 0 30px rgba(0,0,0,0.8); overflow: hidden; background: #1a1a1a; cursor: none;}
+        #hud { display: flex; flex-direction: column; gap: 15px; width: 250px; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; color: white;}
+        .hud-item { font-size: 1.2em; font-weight: bold; padding: 10px; border-radius: 8px; border: 1px solid transparent; text-align: center;}
+        
+        /* 남은 다트: N개 스타일 (파란 박스 제거) */
+        #darts-left-display { background: transparent; color: #2196f3; font-size: 2.2em; padding: 5px 0;}
+        
+        #current-score { color: #4caf50; }
+        #total-score { color: #ffc107; }
+        #wind-status { background: rgba(255, 82, 82, 0.1); border-color: #ff5252; color: #ff5252; font-weight: normal; font-size: 1em;}
+        
         input, button { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2c2c2c; color: white; font-size: 1em; width: 100%; box-sizing: border-box;}
-        button { background: #ff5252; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 5px; }
-        button:hover { background: #ff7b7b; }
+        button { background: #ffd700; color: #121212; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 5px; }
+        button:hover { background: #fffacd; }
+        
         #leaderboard { width: 100%; max-width: 870px; margin-top: 20px; background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 50px;}
-        #leaderboard h2 { margin-top: 0; color: #ffc107; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        #leaderboard h2 { margin-top: 0; color: #ffd700; border-bottom: 2px solid #333; padding-bottom: 10px; }
         #rankList { list-style: none; padding: 0; margin: 0; }
         #rankList li { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #2a2a2a; }
-        #rankList li:nth-child(1) { color: #ffd700; font-size: 1.2em; } /* 1등 강조 */
-        #fake-cursor { position: absolute; width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 10; mix-blend-mode: difference; }
+        #rankList li:nth-child(1) { color: #ffd700; font-size: 1.2em; font-weight: bold; }
+        
+        /* 다트 핀 모양 가짜 커서 */
+        #fake-cursor { position: absolute; width: 20px; height: 20px; background: rgba(255,255,255,0.7); border: 2px solid #ff5252; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 10; box-shadow: 0 0 5px rgba(255,82,82,0.8);}
     </style>
 </head>
 <body>
-    <h1>🎯 Impossible Dart Pro: Extreme</h1>
-    <p style="color: #aaa; margin: 0 0 20px;">10발의 기회! 최고 점수로 전설의 전당에 이름을 올리세요.</p>
+    <h1>CASINO EDEN</h1>
+    <div id="description">10발의 다트로 최고 점수에 도전하세요.<br>전설의 전당에 이름을 올릴 영광의 주인공은 누가 될까요?</div>
     
     <div id="game-container">
         <div id="canvas-wrapper">
@@ -35,20 +44,20 @@
             <canvas id="dartBoard" width="600" height="600"></canvas>
         </div>
         <div id="hud">
-            <div id="darts-left" class="hud-item">10</div>
-            <div class="hud-item">현재 점수: <span id="current-score-val">0</span></div>
-            <div class="hud-item">누적 점수: <span id="total-score-val">0</span></div>
+            <div id="darts-left-display" class="hud-item">남은 다트: 10개</div>
+            <div id="current-score" class="hud-item">현재 점수: <span id="current-score-val">0</span></div>
+            <div id="total-score" class="hud-item">누적 점수: <span id="total-score-val">0</span></div>
             <div id="wind-status" class="hud-item"><div id="wind-desc">바람 계산 중...</div></div>
             <div id="game-over-zone" style="display:none; flex-direction:column; gap:10px;">
                 <input type="text" id="playerName" placeholder="닉네임 (3자 이상)">
-                <button id="submitBtn" onclick="submitScore()">랭킹 등록</button>
+                <button id="submitBtn" onclick="submitScore()">전설 등록</button>
                 <button style="background:#444;" onclick="location.reload()">다시 도전</button>
             </div>
         </div>
     </div>
     
     <div id="leaderboard">
-        <h2>🏆 실시간 전설의 전당 (Top 10)</h2>
+        <h2>전설의 전당 (Top 10)</h2>
         <ul id="rankList">랭킹을 불러오는 중...</ul>
     </div>
 
@@ -56,6 +65,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
+        // Firebase 설정 (싱가포르 서버 주소 적용됨)
         const firebaseConfig = {
             apiKey: "AIzaSyC4cS9GhEAz32y9k11o5B950mbWxULZ1BY",
             authDomain: "eden-dc2c5.firebaseapp.com",
@@ -76,28 +86,37 @@
         let score = 0, dartsLeft = 10, isGameOver = false;
         let mouseX = 300, mouseY = 300, finalX = 300, finalY = 300;
         let targetRotation = 0, rotationSpeed = 0.05, wind = { x: 0, y: 0 };
-        const SHAKE = 80;
+        const SHAKE = 80; // 손떨림 강도
+
+        // 다트판 이미지 로드
+        const dartBoardImg = new Image();
+        dartBoardImg.src = 'image_6.png'; // 제공해주신 다트판 이미지 파일명
+
+        // 이미지 로드가 완료된 후 게임 시작
+        dartBoardImg.onload = function() {
+            changeWind();
+            update();
+        };
 
         function drawBoard() {
             ctx.clearRect(0, 0, 600, 600);
-            ctx.save(); ctx.translate(300, 300);
+            ctx.save();
+            ctx.translate(300, 300);
+            
+            // 다트판 회전 적용 (극악 난이도 유지)
             targetRotation += rotationSpeed;
             if(Math.random() < 0.02) rotationSpeed = (Math.random() - 0.5) * 0.15;
             ctx.rotate(targetRotation);
             
-            ctx.beginPath(); ctx.arc(0, 0, 290, 0, Math.PI * 2); ctx.fillStyle = '#1a1a1a'; ctx.fill();
-            const ringRadii = [280, 260, 180, 160];
-            ringRadii.forEach((r, i) => {
-                ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
-                ctx.fillStyle = (i % 2 === 0) ? '#000' : '#f44336'; ctx.fill();
-            });
-            ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2); ctx.fillStyle = '#ffc107'; ctx.fill();
-            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fillStyle = '#ff5252'; ctx.fill();
+            // 실제 다트판 이미지를 그리기
+            ctx.drawImage(dartBoardImg, -300, -300, 600, 600);
+            
             ctx.restore();
         }
 
         function update() {
             if (isGameOver) return;
+            // 미친 손떨림 효과
             finalX = mouseX + (Math.random() - 0.5) * SHAKE;
             finalY = mouseY + (Math.random() - 0.5) * SHAKE;
             fakeCursor.style.left = finalX + 'px';
@@ -124,13 +143,46 @@
 
         canvas.addEventListener('mousedown', () => {
             if (isGameOver || dartsLeft <= 0) return;
+            // 떨림 + 바람이 적용된 최종 명중 좌표
             const sx = finalX + wind.x, sy = finalY + wind.y;
-            const d = Math.sqrt((sx - 300)**2 + (sy - 300)**2);
-            let s = d <= 10 ? 100 : (d <= 25 ? 50 : (d > 280 ? 0 : Math.max(1, Math.floor((280 - d) / 5))));
+            
+            // 중앙(300, 300)으로부터의 거리 계산
+            const dist = Math.sqrt((sx - 300)**2 + (sy - 300)**2);
+            
+            // 각 영역별 픽셀 거리 정의 (이미지 해상도 600x600 기준 추정)
+            const radii = {
+                b_eye: 10,     // Bull's Eye (붉은 중앙)
+                s_bull: 25,    // Single Bull (초록 띠)
+                t_ring: 175,   // Triple Ring의 시작
+                t_end: 195,    // Triple Ring의 끝
+                d_ring: 280,   // Double Ring의 시작
+                d_end: 300,    // Double Ring의 끝 (다트판 경계)
+            };
+
+            let s = 0;
+            if (dist > radii.d_end) { s = 0; } // 판 밖
+            else if (dist <= radii.b_eye) { s = 50; } // Bull's Eye
+            else if (dist <= radii.s_bull) { s = 25; } // Single Bull (요청하신대로 25점)
+            else {
+                // 구획별 기본 점수 계산
+                const angle = Math.atan2(sy - 300, sx - 300) - targetRotation; // 회전각 고려
+                const scores = [6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10]; // 0도(동쪽)부터 시계방향 점수 배치
+                const sectorSize = (Math.PI * 2) / 20;
+                let sectorIndex = Math.floor((angle + Math.PI + (sectorSize / 2)) / sectorSize) % 20;
+                let baseScore = scores[sectorIndex];
+
+                // 트리플/더블 링 여부 판단
+                if (dist >= radii.t_ring && dist <= radii.t_end) { s = baseScore * 3; } // Triple
+                else if (dist >= radii.d_ring && dist <= radii.d_end) { s = baseScore * 2; } // Double
+                else { s = baseScore; } // Single
+            }
+
             score += s; dartsLeft--;
             document.getElementById('current-score-val').innerText = s;
             document.getElementById('total-score-val').innerText = score;
-            document.getElementById('darts-left').innerText = dartsLeft;
+            // 남은 다트: N개 형식으로 업데이트
+            document.getElementById('darts-left-display').innerText = `남은 다트: ${dartsLeft}개`;
+            
             if (dartsLeft <= 0) endGame();
         });
 
@@ -145,45 +197,35 @@
             if (name.length < 3) return alert("닉네임을 3자 이상 입력하세요.");
             
             document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').innerText = "등록 중...";
+            document.getElementById('submitBtn').innerText = "전설 등록 중...";
 
-            // Number(score)를 사용하여 확실하게 숫자로 저장
             db.ref('rankingPro/').push({
                 name: name,
                 score: Number(score),
                 date: Date.now()
             }).then(() => {
-                alert("기록이 등록되었습니다!");
+                alert("카지노 에덴의 전설로 기록되었습니다!");
                 document.getElementById('game-over-zone').style.display = 'none';
             }).catch((err) => {
-                alert("등록 실패: " + err.message);
+                alert("전설 등록 실패: " + err.message);
                 document.getElementById('submitBtn').disabled = false;
-                document.getElementById('submitBtn').innerText = "랭킹 등록";
+                document.getElementById('submitBtn').innerText = "전설 등록";
             });
         }
 
-        // 랭킹 리스너 수정 (점수 기준 정렬 보장)
+        // 실시간 랭킹 리스너 (정렬 보장)
         db.ref('rankingPro/').orderByChild('score').on('value', (snap) => {
             const list = document.getElementById('rankList');
             list.innerHTML = '';
             let items = [];
-            
-            snap.forEach(child => {
-                items.push(child.val());
-            });
-            
-            // 점수 높은 순서로 정렬 후 상위 10개만 추출
+            snap.forEach(child => items.push(child.val()));
             items.sort((a, b) => b.score - a.score);
             const top10 = items.slice(0, 10);
-
             top10.forEach((d, i) => {
                 list.innerHTML += `<li><span><b>#${i+1}</b> ${d.name}</span><span><b>${d.score}점</b></span></li>`;
             });
-            
-            if(items.length === 0) list.innerHTML = "<li>아직 등록된 전설이 없습니다!</li>";
+            if(items.length === 0) list.innerHTML = "<li>아직 전설이 없습니다. 첫 번째 전설이 되어보세요!</li>";
         });
-
-        changeWind(); update();
     </script>
 </body>
 </html>

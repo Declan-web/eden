@@ -2,179 +2,294 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASINO EDEN</title>
     <style>
+        /* 카지노 블랙 로즈 & 블랙 & 골드 테마 */
+        :root {
+            --rose-black: #1a0202; /* 블랙 로즈 톤 */
+            --bg-black: #0a0a0a;  /* 어두운 배경 */
+            --gold: #d4af37;      /* 골드 포인트 */
+            --rose-red: #4a0404;   /* 어두운 로즈 레드 테두리 */
+        }
+
         body { 
-            margin: 0; background-color: #121212; color: white; 
-            font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; 
+            margin: 0; padding: 0; 
+            background: radial-gradient(circle, #2d0a0a 0%, #050505 100%); 
+            color: #f0f0f0; 
+            /* 기본 서체는 Times New Roman (명조 계열) */
+            font-family: 'Georgia', 'Times New Roman', serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; 
         }
-        
+
+        /* 제목: CASINO EDEN (명조체 적용 및 금색) */
         h1 { 
-            color: #ffcc00; font-size: 3em; margin-top: 40px; margin-bottom: 5px;
-            font-family: 'Batang', 'Gungsuh', serif; 
+            margin: 40px 0 5px; 
+            color: var(--gold); 
+            font-size: 3.5em; letter-spacing: 12px;
+            font-family: 'Batang', 'Georgia', serif; /* 명조체 우선 */
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.4); 
         }
-        
-        #description { color: #888; margin-bottom: 30px; font-size: 0.9em; }
 
-        #game-container { display: flex; gap: 20px; align-items: flex-start; }
-        
+        /* 소제목 유지 */
+        #description { 
+            color: #888; 
+            margin-bottom: 40px; 
+            font-style: italic; 
+            letter-spacing: 1px;
+            font-size: 0.9em;
+        }
+
+        #game-container { display: flex; gap: 40px; justify-content: center; align-items: flex-start; padding: 20px; }
+
+        /* 다트판 캔버스 감싸는 박스 - 정확한 원형 유지 및 테두리 강화 */
         #canvas-wrapper { 
-            position: relative; width: 600px; height: 600px; border-radius: 50%; 
-            border: 10px solid #222; overflow: hidden; cursor: none; background: #000;
+            position: relative; 
+            width: 600px; height: 600px; 
+            border-radius: 50%; 
+            border: 15px solid #111; 
+            box-shadow: 0 0 60px rgba(0,0,0,0.9), 0 0 20px rgba(109,0,0,0.3);
+            overflow: hidden; background: #000; cursor: none;
         }
-        
+
+        canvas { position: absolute; top: 0; left: 0; }
+
+        /* 상태창 패널 디자인 개선 및 규격 고정 */
         #hud { 
-            width: 250px; background: #1e1e1e; padding: 20px; border-radius: 10px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            width: 280px; 
+            background: rgba(10, 10, 10, 0.9); 
+            padding: 25px; 
+            border-radius: 4px; 
+            border: 1px solid var(--rose-red);
+            box-shadow: 0 0 30px rgba(74, 4, 4, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* 내부 요소 간격 고정 */
         }
+
+        .hud-item {
+            border-bottom: 1px solid #222;
+            padding-bottom: 10px;
+        }
+
+        .hud-label { color: #666; font-size: 0.8em; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 3px; }
+        .hud-value { font-size: 1.8em; margin: 0; }
         
-        .stat-box { margin-bottom: 20px; }
-        .label { color: #aaa; font-size: 0.8em; margin-bottom: 5px; text-transform: uppercase; }
-        .val { font-size: 2em; font-weight: bold; color: #4da6ff; }
-        #total-score { color: #ffcc00; }
-
-        #wind-indicator { color: #ff4d4d; font-size: 0.9em; margin-top: 10px; }
-
-        #over-ui { display: none; margin-top: 15px; }
-        input { width: 100%; padding: 10px; margin-bottom: 10px; background: #333; border: 1px solid #444; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #4da6ff; border: none; color: white; font-weight: bold; cursor: pointer; }
-        button:hover { background: #357abd; }
-
-        #leaderboard { width: 890px; margin: 40px 0; background: #1e1e1e; padding: 25px; border-radius: 10px; }
-        .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .board-header h2 { margin: 0; color: #ffcc00; }
+        #darts-left-display { color: #ff3e3e; font-weight: bold; text-shadow: 0 0 10px rgba(255, 62, 62, 0.5);}
+        #total-score-val { color: var(--gold); }
         
-        #admin-reset-btn { width: auto; padding: 5px 10px; font-size: 0.7em; background: #333; color: #666; }
-        #admin-reset-btn:hover { background: #444; color: #ff4d4d; }
+        /* 'PT' 글자는 JavaScript 계산에서 분리하여 HTML에 고정 */
+        .score-unit { font-size: 0.6em; color: var(--gold); vertical-align: bottom;}
 
-        #rankList { list-style: none; padding: 0; margin: 0; }
-        #rankList li { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #2a2a2a; }
-        
-        #fake-cursor { position: absolute; width: 10px; height: 10px; background: white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 10; box-shadow: 0 0 10px #fff; }
+        #game-over-zone { display:none; flex-direction:column; gap: 10px;}
+
+        input, button { 
+            width: 100%; padding: 12px; border-radius: 3px; border: 1px solid var(--gold); 
+            background: #111; color: var(--gold); font-family: 'Batang', serif; font-size: 1em; outline: none; box-sizing: border-box;
+        }
+
+        input { color: #eee; }
+
+        button { background: var(--rose-red); color: white; border: none; cursor: pointer; transition: 0.3s; font-weight: bold; margin-top: 5px;}
+        button:hover { background: #800; box-shadow: 0 0 15px rgba(74,4,4,0.6); }
+
+        /* 기록 초기화 버튼 (네모 박스 밑에 위치) */
+        #reset-btn {
+            background: #222;
+            color: #888;
+            border: 1px solid #333;
+            font-size: 0.85em;
+            margin-top: 15px;
+        }
+        #reset-btn:hover { background: #333; color: var(--gold); }
+
+        /* 가짜 커서 (다트 핀 모양) */
+        #fake-cursor { 
+            position: absolute; width: 12px; height: 12px; background: #fff; border-radius: 50%; 
+            pointer-events: none; transform: translate(-50%, -50%); z-index: 10;
+            box-shadow: 0 0 15px #fff, 0 0 5px var(--gold);
+        }
     </style>
 </head>
 <body>
     <h1>CASINO EDEN</h1>
     <div id="description">열 발의 다트로 남기는 불멸의 기록</div>
-
+    
     <div id="game-container">
         <div id="canvas-wrapper">
             <div id="fake-cursor"></div>
             <canvas id="dartBoard" width="600" height="600"></canvas>
         </div>
         <div id="hud">
-            <div class="stat-box">
-                <div class="label">Darts Remaining</div>
-                <div id="darts-val" class="val">10</div>
+            <div class="hud-item">
+                <div class="hud-label">Darts Remaining</div>
+                <div id="darts-left-display" class="hud-value">10</div>
             </div>
-            <div class="stat-box">
-                <div class="label">Total Score</div>
-                <div id="total-score" class="val">0</div>
+            
+            <div class="hud-item">
+                <div class="hud-label">Total Score</div>
+                <div class="hud-value"><span id="total-score-val">0</span> <span class="score-unit">PT</span></div>
             </div>
-            <div class="stat-box">
-                <div class="label">Last Hit</div>
-                <div id="hit-val" class="val">0</div>
+            
+            <div class="hud-item">
+                <div class="hud-label">Hit</div>
+                <div id="hit-value" style="color:#f0f0f0;" class="hud-value">0</div>
             </div>
-            <div id="wind-indicator">Calculating Wind...</div>
-            <div id="over-ui">
-                <input type="text" id="nick" placeholder="NICKNAME">
-                <button onclick="saveResult()">RECORD LEGACY</button>
+
+            <div id="game-over-zone">
+                <input type="text" id="playerName" placeholder="닉네임 (3~10자)">
+                <button id="submitBtn" onclick="submitScore()">전설로 등록</button>
             </div>
+
+            <button id="reset-btn" onclick="resetGame()">기록 초기화</button>
         </div>
     </div>
 
-    <div id="leaderboard">
-        <div class="board-header">
-            <h2>🏆 실시간 전설의 전당 (Top 10)</h2>
-            <button id="admin-reset-btn" onclick="adminReset()">RESET DATA</button>
-        </div>
-        <ul id="rankList">Syncing Data...</ul>
-    </div>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyC4cS9GhEAz32y9k11o5B950mbWxULZ1BY",
-            databaseURL: "https://eden-dc2c5-default-rtdb.asia-southeast1.firebasedatabase.app"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const canvas = document.getElementById('dartBoard');
+        const ctx = canvas.getContext('2d');
+        const fakeCursor = document.getElementById('fake-cursor');
+        const gameOverZone = document.getElementById('game-over-zone');
+        
+        // 점수 및 게임 상태 변수 초기화
+        let totalScore = 0;
+        let dartsLeft = 10;
+        let isGameOver = false;
+        let mouseX = 300;
+        let mouseY = 300;
+        let finalX = 300;
+        let finalY = 300;
+        let rotation = 0;
+        let rotationSpeed = 0.05;
+        const SHAKE = 85; // 손떨림 강도 (미친 난이도)
 
-        const cvs = document.getElementById('dartBoard');
-        const ctx = cvs.getContext('2d');
-        const img = new Image();
-        img.src = 'image_6.png';
+        // 로컬 다트판 이미지 로드
+        const dartImg = new Image();
+        // 깃허브에 올리신 image_6.png 파일을 사용합니다.
+        dartImg.src = 'image_6.png'; 
 
-        let score = 0, darts = 10, over = false;
-        let mx = 300, my = 300, rot = 0, wx = 0, wy = 0;
-
-        img.onload = () => { loop(); windTick(); };
-
-        function loop() {
-            if(over) return;
-            ctx.clearRect(0,0,600,600);
-            ctx.save(); ctx.translate(300,300); rot += 0.04; ctx.rotate(rot);
-            ctx.drawImage(img, -300, -300, 600, 600); ctx.restore();
-            
-            window.tx = mx + (Math.random()-0.5)*85;
-            window.ty = my + (Math.random()-0.5)*85;
-            const cur = document.getElementById('fake-cursor');
-            cur.style.left = window.tx+'px'; cur.style.top = window.ty+'px';
-            
-            requestAnimationFrame(loop);
-        }
-
-        cvs.onmousemove = (e) => { const r = cvs.getBoundingClientRect(); mx = e.clientX-r.left; my = e.clientY-r.top; };
-        cvs.onmousedown = () => {
-            if(over || darts <= 0) return;
-            const fx = window.tx + wx, fy = window.ty + wy;
-            const d = Math.sqrt((fx-300)**2 + (fy-300)**2);
-            let p = (d < 15) ? 50 : (d < 35) ? 25 : (d < 285) ? Math.floor(Math.random()*20)+1 : 0;
-            
-            score += p; darts--;
-            document.getElementById('hit-val').innerText = p;
-            document.getElementById('total-score').innerText = score;
-            document.getElementById('darts-val').innerText = darts;
-            if(darts <= 0) { over = true; document.getElementById('over-ui').style.display='block'; }
+        dartImg.onload = () => {
+            // 이미지 로드 후 애니메이션 시작
+            changeWind();
+            animate();
         };
 
-        function windTick() {
-            if(over) return;
-            wx = (Math.random()-0.5)*50; wy = (Math.random()-0.5)*50;
-            document.getElementById('wind-indicator').innerText = `WIND: ${Math.abs(Math.floor(wx))}m/s`;
-            setTimeout(windTick, 2500);
+        function animate() {
+            if (isGameOver) return;
+
+            // 손떨림 효과 계산
+            finalX = mouseX + (Math.random() - 0.5) * SHAKE;
+            finalY = mouseY + (Math.random() - 0.5) * SHAKE;
+            fakeCursor.style.left = finalX + 'px';
+            fakeCursor.style.top = finalY + 'px';
+
+            ctx.clearRect(0, 0, 600, 600);
+            ctx.save();
+            ctx.translate(300, 300);
+            
+            // 다트판 미친 회전 적용
+            rotation += rotationSpeed;
+            if(Math.random() < 0.02) rotationSpeed = (Math.random() - 0.5) * 0.15;
+            ctx.rotate(rotation);
+            
+            // 이미지를 캔버스 크기(600x600)에 꽉 차게 그림 (규격 오류 해결)
+            ctx.drawImage(dartImg, -300, -300, 600, 600);
+            ctx.restore();
+
+            requestAnimationFrame(animate);
         }
 
-        function saveResult() {
-            const n = document.getElementById('nick').value;
-            // 이름 길이 제한 삭제: 한 글자 이상이면 무조건 통과
-            if(!n) return alert("Please enter your name!");
-            db.ref('rankingPro').push({name:n, score:score}).then(() => location.reload());
+        // 바람 변수 및 효과
+        let windX = 0;
+        let windY = 0;
+        function changeWind() {
+            if (isGameOver) return;
+            // 미친 바람 세기
+            windX = (Math.random() - 0.5) * 60; 
+            windY = (Math.random() - 0.5) * 60;
+            setTimeout(changeWind, 3000);
         }
 
-        function adminReset() {
-            const pw = prompt("Enter Admin Password.");
-            if(pw === "1119") {
-                if(confirm("Delete all records?")) {
-                    db.ref('rankingPro').remove().then(() => alert("Data cleared."));
-                }
-            } else {
-                alert("Incorrect Password.");
-            }
-        }
-
-        db.ref('rankingPro').on('value', (snap) => {
-            const list = document.getElementById('rankList');
-            list.innerHTML = '';
-            let arr = [];
-            snap.forEach(c => { arr.push(c.val()); });
-            arr.sort((a,b) => b.score - a.score);
-            arr.slice(0,10).forEach((v, i) => {
-                list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
-            });
-            if(arr.length === 0) list.innerHTML = "<li>No records found.</li>";
+        canvas.addEventListener('mousemove', (e) => {
+            const r = canvas.getBoundingClientRect();
+            mouseX = e.clientX - r.left;
+            mouseY = e.clientY - r.top;
         });
+
+        canvas.addEventListener('mousedown', () => {
+            if (isGameOver || dartsLeft <= 0) return;
+            
+            // 최종 명중 좌표 (손떨림 + 바람 적용)
+            const sx = finalX + windX;
+            const sy = finalY + windY;
+            
+            // 중앙(300,300)으로부터의 거리 계산
+            const dist = Math.sqrt((sx - 300)**2 + (sy - 300)**2);
+            
+            // 점수 영역 정의 (600x600 규격 기준)
+            const radii = { bull: 15, singlebull: 35, double_e: 280, triple_s: 160, triple_e: 180, double_s: 260 };
+            let hitScore = 0;
+
+            if (dist > radii.double_e) {
+                hitScore = 0; // 판 밖
+            } else if (dist <= radii.bull) {
+                hitScore = 50; // Bull's Eye
+            } else if (dist <= radii.singlebull) {
+                hitScore = 25; // Single Bull
+            } else {
+                // 구획(Sector)별 점수 계산
+                const angle = Math.atan2(sy - 300, sx - 300) - rotation; // 회전각 고려
+                const sectorScores = [6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10]; // 점수 배치
+                const sectorSize = (Math.PI * 2) / 20;
+                let sectorIndex = Math.floor((angle + Math.PI + (sectorSize / 2)) / sectorSize) % 20;
+                hitScore = sectorScores[sectorIndex];
+
+                // 트리플/더블 링 여부 판단
+                if (dist >= radii.triple_s && dist <= radii.triple_e) {
+                    hitScore *= 3; // Triple
+                } else if (dist >= radii.double_s && dist <= radii.double_e) {
+                    hitScore *= 2; // Double
+                }
+            }
+
+            // 점수 업데이트 (PT 글자는 분리)
+            totalScore += hitScore;
+            document.getElementById('hit-value').innerText = hitScore;
+            document.getElementById('total-score-val').innerText = totalScore;
+
+            dartsLeft--;
+            document.getElementById('darts-left-display').innerText = dartsLeft;
+            
+            if (dartsLeft <= 0) {
+                isGameOver = true;
+                gameOverZone.style.display = 'flex';
+                fakeCursor.style.display = 'none';
+            }
+        });
+
+        // 기록 초기화 함수
+        function resetGame() {
+            if(!confirm("현재 기록을 초기화하시겠습니까?")) return;
+            totalScore = 0;
+            dartsLeft = 10;
+            isGameOver = false;
+            document.getElementById('hit-value').innerText = '0';
+            document.getElementById('total-score-val').innerText = '0';
+            document.getElementById('darts-left-display').innerText = '10';
+            document.getElementById('playerName').value = '';
+            gameOverZone.style.display = 'none';
+            fakeCursor.style.display = 'block';
+            rotation = 0;
+            requestAnimationFrame(animate); // 애니메이션 재시작
+        }
+
+        // 랭킹 등록 함수 (서버 연동은 추후 추가)
+        function submitScore() {
+            const name = document.getElementById('playerName').value.trim();
+            if (name.length < 3) return alert("닉네임을 3자 이상 입력하세요.");
+            alert(`${name}님, ${totalScore} PT로 등록되었습니다! (서버 연동 전입니다)`);
+            resetGame(); // 등록 후 게임 초기화
+        }
     </script>
 </body>
 </html>

@@ -163,7 +163,7 @@
         };
         function windTick() { if(over) return; wx = (Math.random()-0.5)*50; wy = (Math.random()-0.5)*50; document.getElementById('wind-indicator').innerText = `WIND: ${Math.abs(Math.floor(wx))}m/s`; setTimeout(windTick, 2500); }
 
-        /* --- 슬롯머신 로직 (확률 복구) --- */
+        /* --- 슬롯머신 로직 (보상 수치 수정) --- */
         const slotItems = ['♠','◆','♥','♣','●','■']; 
         const weightedPool = ['♠','♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','●','●','●','●','●','●','●','■','■','■','■','■','■','■','■','■','■'];
 
@@ -201,7 +201,8 @@
                 const isWin = res.every(v => v === res[0]);
                 if(isWin) {
                     const s = res[0];
-                    let w = (s==='♠')?1000:(s==='◆')?600:(s==='♥')?200:(s==='♣')?100:0;
+                    // 보상 밸런스 수정됨
+                    let w = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:0;
                     if(w > 0) {
                         currentWinC = w;
                         document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`;

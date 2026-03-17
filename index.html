@@ -55,18 +55,17 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // 1. 여기에 본인의 Firebase 정보를 정확히 입력하세요!
         const firebaseConfig = {
             apiKey: "AIzaSyC4cS9GhEAz32y9k11o5B950mbWxULZ1BY",
             authDomain: "eden-dc2c5.firebaseapp.com",
-            projectId: "eden-dc2c5", // 본인의 프로젝트 ID로 꼭 확인!
-            databaseURL: "https://eden-dc2c5-default-rtdb.asia-southeast1.firebasedatabase.app",, // ★여기가 중요합니다!
+            projectId: "eden-dc2c5",
+            // ★ 사용자의 실제 싱가포르 서버 주소로 적용되었습니다.
+            databaseURL: "https://eden-dc2c5-default-rtdb.asia-southeast1.firebasedatabase.app",
             storageBucket: "eden-dc2c5.firebasestorage.app",
             messagingSenderId: "889059945973",
             appId: "1:889059945973:web:211078b67f46e6796d04bc"
         };
 
-        // Firebase 초기화
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -156,13 +155,12 @@
                 alert("기록이 전설의 전당에 등록되었습니다!");
                 document.getElementById('game-over-zone').style.display = 'none';
             }).catch((err) => {
-                alert("등록 실패: " + err.message + "\nFirebase Database의 Rules(규칙)를 확인하세요!");
+                alert("등록 실패: " + err.message);
                 document.getElementById('submitBtn').disabled = false;
                 document.getElementById('submitBtn').innerText = "랭킹 등록";
             });
         }
 
-        // 실시간 랭킹 리스너
         db.ref('rankingPro/').orderByChild('score').limitToLast(10).on('value', (snap) => {
             const list = document.getElementById('rankList');
             list.innerHTML = '';

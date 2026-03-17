@@ -86,7 +86,7 @@
     </div>
 
     <div id="slot-section" class="game-section">
-        <div class="description">WHEEL OF DESTINY</div>
+        <div class="description">운명이 결정되는 단 한 번의 찬스</div>
         <div id="slot-machine">
             <div id="slot-msg">CHALLENGE YOUR LUCK</div>
             <div class="slot-container">
@@ -97,13 +97,13 @@
             </div>
             <button id="spin-btn" onclick="spinSlot()">SPIN</button>
             <div id="slot-over-ui" style="display:none; margin-top:20px;">
-                <p style="color:var(--dark-red); font-weight:bold; font-size:1.5em;">🎊 SUCCESS! ENTER YOUR NAME</p>
+                <p style="color:var(--dark-red); font-weight:bold; font-size:1.5em;">SUCCESS!</p>
                 <input type="text" id="slot-nick" placeholder="NICKNAME">
                 <button onclick="saveResult('slot')">RECORD LEGACY</button>
             </div>
         </div>
         <div class="leaderboard">
-            <div class="board-header"><h2>전설의 전당(누적)</h2><button style="width:auto; padding:5px;" onclick="adminReset('slot')">RESET</button></div>
+            <div class="board-header"><h2>전설의 전당</h2><button style="width:auto; padding:5px;" onclick="adminReset('slot')">RESET</button></div>
             <ul id="slotRankList" class="rankList"></ul>
         </div>
     </div>

@@ -24,7 +24,7 @@
         .game-section { display: none; flex-direction: column; align-items: center; }
         .game-section.active { display: flex; }
 
-        /* 다트판 (기존 물리 로직 완전 보존) */
+        /* 다트판 보존 */
         #canvas-wrapper { position: relative; width: 600px; height: 600px; border-radius: 50%; border: 10px solid #222; overflow: hidden; cursor: none; background: #000; }
         #hud { width: 250px; background: #1a1a1a; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .stat-box { margin-bottom: 20px; }
@@ -36,7 +36,7 @@
         #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
         .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
         .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
-        .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; transition: top 0s; }
+        .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95); }
         .slot-item { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 4.5em; flex-shrink: 0; }
 
         @media (min-width: 1024px) {
@@ -48,16 +48,12 @@
         button { width: 100%; padding: 18px; background: var(--dark-red); border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 1.2em; }
         button:hover { background: #990000; }
 
-        /* 랭킹 섹션 */
         .leaderboard { width: 890px; margin: 40px 0; background: #1a1a1a; padding: 25px; border-radius: 10px; }
         .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .board-header h2 { margin: 0; color: var(--dark-red); font-size: 1.5em; }
-        .admin-reset-btn { width: auto; padding: 5px 10px; font-size: 0.7em; background: #333; color: #666; }
         .rankList { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
         .rankList li { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #2a2a2a; }
-        
         #fake-cursor { position: absolute; width: 10px; height: 10px; background: white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 10; box-shadow: 0 0 10px #fff; }
-        .rolling { transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95) !important; }
     </style>
 </head>
 <body>
@@ -67,7 +63,7 @@
     </div>
 
     <h1>EDEN CASINO</h1>
-    <div id="description">운명이 결정되는 단 한 번의 찬스</div>
+    <div id="description">열 발의 다트로 남기는 불멸의 기록</div>
 
     <div id="dart-section" class="game-section active">
         <div id="game-container" style="display: flex; gap: 20px;">
@@ -84,7 +80,7 @@
             </div>
         </div>
         <div class="leaderboard">
-            <div class="board-header"><h2>전설의 전당(TOP 10)</h2><button class="admin-reset-btn" onclick="adminReset('dart')">RESET DATA</button></div>
+            <div class="board-header"><h2>전설의 전당(TOP 10)</h2><button style="width:auto; padding:5px;" onclick="adminReset('dart')">RESET</button></div>
             <ul id="rankList" class="rankList"></ul>
         </div>
     </div>
@@ -106,7 +102,7 @@
             </div>
         </div>
         <div class="leaderboard">
-            <div class="board-header"><h2>전설의 전당(누적)</h2><button class="admin-reset-btn" onclick="adminReset('slot')">RESET DATA</button></div>
+            <div class="board-header"><h2>전설의 전당(누적)</h2><button style="width:auto; padding:5px;" onclick="adminReset('slot')">RESET</button></div>
             <ul id="slotRankList" class="rankList"></ul>
         </div>
     </div>
@@ -129,7 +125,7 @@
             if(game === 'dart') btns[0].classList.add('active'); else btns[1].classList.add('active');
         }
 
-        /* --- 다트 로직 (보존) --- */
+        /* --- 다트 게임 (완전 보존) --- */
         const cvs = document.getElementById('dartBoard'); const ctx = cvs.getContext('2d'); const img = new Image(); img.src = 'image_6.png';
         let score = 0, darts = 10, over = false, mx = 300, my = 300, rot = 0, wx = 0, wy = 0, marks = [];
         img.onload = () => { loop(); windTick(); };
@@ -151,27 +147,22 @@
             document.getElementById('hit-val').innerText = p; 
             document.getElementById('total-score').innerText = score; 
             document.getElementById('darts-val').innerText = darts;
-            if(darts <= 0) { 
-                over = true; 
-                document.getElementById('over-ui').style.display='block'; 
-            }
+            if(darts <= 0) { over = true; document.getElementById('over-ui').style.display='block'; }
         };
         function windTick() { if(over) return; wx = (Math.random()-0.5)*50; wy = (Math.random()-0.5)*50; document.getElementById('wind-indicator').innerText = `WIND: ${Math.abs(Math.floor(wx))}m/s`; setTimeout(windTick, 2500); }
 
-        /* --- 슬롯머신 로직 (순차적 공개) --- */
+        /* --- 슬롯머신 (순차 공개 강화) --- */
         const slotItems = ['♠','◆','♥','♣','●','■']; 
         const weightedPool = ['♠','♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','●','●','●','●','●','●','●','■','■','■','■','■','■','■','■','■','■'];
         
         function initReels() {
             for(let i=1; i<=4; i++) {
-                const reel = document.getElementById('reel'+i);
-                reel.innerHTML = '';
+                const reel = document.getElementById('reel'+i); reel.innerHTML = '';
                 for(let j=0; j<20; j++) {
                     const sym = slotItems[Math.floor(Math.random()*slotItems.length)];
                     const div = document.createElement('div');
                     div.className = 'slot-item' + (sym === '◆' ? ' diamond-item' : '');
-                    div.innerText = sym;
-                    reel.appendChild(div);
+                    div.innerText = sym; reel.appendChild(div);
                 }
             }
         }
@@ -181,30 +172,24 @@
         function spinSlot() {
             document.getElementById('slot-over-ui').style.display = 'none';
             document.getElementById('slot-msg').innerText = "ROLLING...";
-            const btn = document.getElementById('spin-btn');
-            btn.disabled = true;
+            const btn = document.getElementById('spin-btn'); btn.disabled = true;
             const res = [];
             
-            // 결과 미리 결정 및 애니메이션 시작
             for(let i=1; i<=4; i++) {
                 const reel = document.getElementById('reel'+i);
                 const final = weightedPool[Math.floor(Math.random()*weightedPool.length)];
                 res.push(final);
-                
                 reel.lastElementChild.innerText = final;
                 reel.lastElementChild.className = 'slot-item' + (final === '◆' ? ' diamond-item' : '');
                 
-                reel.style.top = "0px";
-                reel.classList.remove('rolling');
+                reel.style.transition = "none"; reel.style.top = "0px";
                 void reel.offsetWidth; 
                 
-                // 순차적 공개를 위해 transition-delay 계산 (0s, 0.4s, 0.8s, 1.2s)
-                reel.style.transitionDelay = (i-1)*0.4 + "s";
-                reel.classList.add('rolling');
+                // 순차 정지를 위해 transition 시간을 다르게 설정 (2.0s, 2.4s, 2.8s, 3.2s)
+                reel.style.transition = `top ${2 + (i-1)*0.4}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
                 reel.style.top = "-3040px";
             }
 
-            // 모든 릴이 멈추는 시점 (마지막 릴 delay 1.2s + 애니메이션 2s = 3.2s)
             setTimeout(() => {
                 btn.disabled = false;
                 if(res.every(v => v === res[0])) {
@@ -214,87 +199,58 @@
                         currentWinC = w;
                         document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`;
                         document.getElementById('slot-over-ui').style.display = 'block';
-                    } else { document.getElementById('slot-msg').innerText = "FAILED."; }
-                } else { document.getElementById('slot-msg').innerText = "FAILED."; }
+                    } else { document.getElementById('slot-msg').innerText = "FAILED. TRY AGAIN."; }
+                } else { document.getElementById('slot-msg').innerText = "FAILED. TRY AGAIN."; }
                 
-                // 초기화 준비 (delay 제거 및 위치 리셋)
                 for(let i=1; i<=4; i++) {
                     const reel = document.getElementById('reel'+i);
-                    reel.classList.remove('rolling');
-                    reel.style.transitionDelay = "0s";
-                    reel.style.top = "0px";
+                    reel.style.transition = "none"; reel.style.top = "0px";
                     reel.firstElementChild.innerText = res[i-1];
                     reel.firstElementChild.className = 'slot-item' + (res[i-1] === '◆' ? ' diamond-item' : '');
                 }
             }, 3500);
         }
 
-        /* --- 데이터 저장 (다트 기록 문제 해결) --- */
+        /* --- 저장 및 랭킹 (다트 완벽 해결) --- */
         function saveResult(type) {
+            const nickId = (type === 'dart') ? 'nick-dart' : 'slot-nick';
+            const name = document.getElementById(nickId).value.trim();
+            if(!name) return alert("전설의 이름을 입력하세요.");
+
             if(type === 'dart') {
-                const nameInput = document.getElementById('nick-dart');
-                const name = nameInput.value.trim();
-                // 현재 전광판에 표시된 점수를 실시간으로 읽어옴 (변수 꼬임 방지)
-                const currentScore = parseInt(document.getElementById('total-score').innerText);
-
-                if(!name) return alert("전설의 이름을 입력해 주세요.");
-
-                db.ref('rankingPro').push({
-                    name: name,
-                    score: currentScore,
-                    timestamp: Date.now()
-                }).then(() => {
-                    alert("전설이 기록되었습니다.");
-                    location.reload(); 
-                }).catch(e => {
-                    console.error(e);
-                    alert("기록 중 오류가 발생했습니다.");
-                });
+                // 실시간 스코어 강제 획득
+                const finalScore = parseInt(document.getElementById('total-score').innerText);
+                db.ref('rankingPro').push({ name: name, score: finalScore, date: Date.now() })
+                .then(() => { alert("전설이 기록되었습니다."); location.reload(); })
+                .catch(() => alert("연결 오류"));
             } else {
-                const nameInput = document.getElementById('slot-nick');
-                const name = nameInput.value.trim();
-                if(!name) return alert("전설의 이름을 입력해 주세요.");
-
-                db.ref('slotRanking_v2').push({
-                    name: name,
-                    score: currentWinC,
-                    date: Date.now()
-                }).then(() => {
-                    alert("전설이 기록되었습니다.");
+                db.ref('slotRanking_v3').push({ name: name, score: currentWinC, date: Date.now() })
+                .then(() => { 
+                    alert("전설이 기록되었습니다."); 
                     document.getElementById('slot-over-ui').style.display = 'none';
-                    nameInput.value = '';
-                }).catch(e => {
-                    console.error(e);
-                    alert("기록 중 오류가 발생했습니다.");
+                    document.getElementById('slot-nick').value = '';
                 });
             }
         }
 
         function adminReset(type) {
-            if(prompt("관리자 비밀번호를 입력하세요.") === "1119") {
-                db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v2').remove().then(() => alert("전설이 초기화되었습니다."));
-            }
+            if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove();
         }
 
-        // 데이터 실시간 리스너
         db.ref('rankingPro').on('value', (snap) => {
             const list = document.getElementById('rankList'); list.innerHTML = '';
-            let arr = [];
-            snap.forEach(c => { arr.push(c.val()); });
+            let arr = []; snap.forEach(c => arr.push(c.val()));
             arr.sort((a,b) => b.score - a.score).slice(0,10).forEach((v, i) => {
                 list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
             });
-            if(arr.length === 0) list.innerHTML = "<li>비어 있음</li>";
         });
 
-        db.ref('slotRanking_v2').on('value', (snap) => {
+        db.ref('slotRanking_v3').on('value', (snap) => {
             const list = document.getElementById('slotRankList'); list.innerHTML = '';
-            let arr = [];
-            snap.forEach(c => { arr.push(c.val()); });
+            let arr = []; snap.forEach(c => arr.push(c.val()));
             arr.reverse().forEach((v) => {
                 list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
             });
-            if(arr.length === 0) list.innerHTML = "<li>비어 있음</li>";
         });
     </script>
 </body>

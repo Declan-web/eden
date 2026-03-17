@@ -21,12 +21,13 @@
         #leaderboard h2 { margin-top: 0; color: #ffc107; border-bottom: 2px solid #333; padding-bottom: 10px; }
         #rankList { list-style: none; padding: 0; margin: 0; }
         #rankList li { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #2a2a2a; }
+        #rankList li:nth-child(1) { color: #ffd700; font-size: 1.2em; } /* 1등 강조 */
         #fake-cursor { position: absolute; width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 10; mix-blend-mode: difference; }
     </style>
 </head>
 <body>
     <h1>🎯 Impossible Dart Pro: Extreme</h1>
-    <p style="color: #aaa; margin: 0 0 20px;">바람과 손떨림을 극복하세요. 10발 안에 랭킹에 도전하세요!</p>
+    <p style="color: #aaa; margin: 0 0 20px;">10발의 기회! 최고 점수로 전설의 전당에 이름을 올리세요.</p>
     
     <div id="game-container">
         <div id="canvas-wrapper">
@@ -48,7 +49,7 @@
     
     <div id="leaderboard">
         <h2>🏆 실시간 전설의 전당 (Top 10)</h2>
-        <ul id="rankList">데이터를 불러오는 중...</ul>
+        <ul id="rankList">랭킹을 불러오는 중...</ul>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -59,7 +60,6 @@
             apiKey: "AIzaSyC4cS9GhEAz32y9k11o5B950mbWxULZ1BY",
             authDomain: "eden-dc2c5.firebaseapp.com",
             projectId: "eden-dc2c5",
-            // ★ 사용자의 실제 싱가포르 서버 주소로 적용되었습니다.
             databaseURL: "https://eden-dc2c5-default-rtdb.asia-southeast1.firebasedatabase.app",
             storageBucket: "eden-dc2c5.firebasestorage.app",
             messagingSenderId: "889059945973",
@@ -147,12 +147,13 @@
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('submitBtn').innerText = "등록 중...";
 
+            // Number(score)를 사용하여 확실하게 숫자로 저장
             db.ref('rankingPro/').push({
                 name: name,
-                score: score,
+                score: Number(score),
                 date: Date.now()
             }).then(() => {
-                alert("기록이 전설의 전당에 등록되었습니다!");
+                alert("기록이 등록되었습니다!");
                 document.getElementById('game-over-zone').style.display = 'none';
             }).catch((err) => {
                 alert("등록 실패: " + err.message);
@@ -161,15 +162,24 @@
             });
         }
 
-        db.ref('rankingPro/').orderByChild('score').limitToLast(10).on('value', (snap) => {
+        // 랭킹 리스너 수정 (점수 기준 정렬 보장)
+        db.ref('rankingPro/').orderByChild('score').on('value', (snap) => {
             const list = document.getElementById('rankList');
             list.innerHTML = '';
             let items = [];
-            snap.forEach(c => items.push(c.val()));
-            items.reverse().forEach((d, i) => {
-                const date = new Date(d.date).toLocaleDateString('ko-KR');
-                list.innerHTML += `<li><span><b>#${i+1}</b> ${d.name}</span><span><b>${d.score}점</b> (${date})</span></li>`;
+            
+            snap.forEach(child => {
+                items.push(child.val());
             });
+            
+            // 점수 높은 순서로 정렬 후 상위 10개만 추출
+            items.sort((a, b) => b.score - a.score);
+            const top10 = items.slice(0, 10);
+
+            top10.forEach((d, i) => {
+                list.innerHTML += `<li><span><b>#${i+1}</b> ${d.name}</span><span><b>${d.score}점</b></span></li>`;
+            });
+            
             if(items.length === 0) list.innerHTML = "<li>아직 등록된 전설이 없습니다!</li>";
         });
 

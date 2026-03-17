@@ -163,10 +163,9 @@
         };
         function windTick() { if(over) return; wx = (Math.random()-0.5)*50; wy = (Math.random()-0.5)*50; document.getElementById('wind-indicator').innerText = `WIND: ${Math.abs(Math.floor(wx))}m/s`; setTimeout(windTick, 2500); }
 
-        /* --- 슬롯머신 로직 (성공 확률 100% 보정) --- */
+        /* --- 슬롯머신 로직 (확률 복구) --- */
         const slotItems = ['♠','◆','♥','♣','●','■']; 
-        // 테스트를 위해 모든 풀을 스페이드로 통일
-        const weightedPool = ['♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠']; 
+        const weightedPool = ['♠','♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','●','●','●','●','●','●','●','■','■','■','■','■','■','■','■','■','■'];
 
         function initReels() {
             for(let i=1; i<=4; i++) {
@@ -185,15 +184,13 @@
             document.getElementById('slot-msg').innerText = "ROLLING...";
             const btn = document.getElementById('spin-btn'); btn.disabled = true;
             const res = [];
-            
-            // 모든 릴이 무조건 동일한 결과를 내도록 설정
-            const forcedResult = weightedPool[0]; 
 
             for(let i=1; i<=4; i++) {
                 const reel = document.getElementById('reel'+i);
-                res.push(forcedResult); 
-                reel.lastElementChild.innerText = forcedResult;
-                reel.lastElementChild.className = 'slot-item' + (forcedResult === '◆' ? ' diamond-item' : '');
+                const final = weightedPool[Math.floor(Math.random()*weightedPool.length)];
+                res.push(final);
+                reel.lastElementChild.innerText = final;
+                reel.lastElementChild.className = 'slot-item' + (final === '◆' ? ' diamond-item' : '');
                 reel.style.transition = "none"; reel.style.top = "0px";
                 void reel.offsetWidth; 
                 reel.style.transition = `top ${2 + (i-1)*0.4}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;

@@ -2,236 +2,139 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASINO EDEN</title>
     <style>
-        /* 카지노 블랙 로즈 & 블랙 & 골드 테마 */
         :root {
-            --rose-black: #1a0202; /* 블랙 로즈 톤 */
-            --bg-black: #0a0a0a;  /* 어두운 배경 */
-            --gold: #d4af37;      /* 골드 포인트 */
-            --rose-red: #4a0404;   /* 어두운 로즈 레드 테두리 */
+            --red: #4a0404;
+            --gold: #d4af37;
+            --black: #050505;
         }
-
         body { 
-            margin: 0; padding: 0; 
-            background: radial-gradient(circle, #2d0a0a 0%, #050505 100%); 
-            color: #f0f0f0; 
-            font-family: 'Times New Roman', serif; 
-            display: flex; flex-direction: column; align-items: center; min-height: 100vh; 
+            margin: 0; background: radial-gradient(circle, var(--red) 0%, var(--black) 100%); 
+            color: #eee; font-family: 'serif'; display: flex; flex-direction: column; align-items: center; 
         }
-
-        h1 { 
-            margin: 40px 0 5px; 
-            color: var(--gold); 
-            font-size: 3.5em; letter-spacing: 12px;
-            text-shadow: 0 0 20px rgba(212, 175, 55, 0.4); 
-        }
-
-        #description { color: #888; margin-bottom: 40px; font-style: italic; letter-spacing: 1px; }
-
-        #game-container { display: flex; gap: 40px; justify-content: center; align-items: flex-start; padding: 20px; }
-
-        /* 다트판 캔버스 감싸는 박스 - 정확한 원형 유지 */
+        h1 { color: var(--gold); font-size: 3.5em; letter-spacing: 10px; margin-top: 40px; text-shadow: 0 0 20px rgba(212,175,55,0.4); }
+        #game-container { display: flex; gap: 30px; margin-top: 20px; }
         #canvas-wrapper { 
-            position: relative; 
-            width: 600px; height: 600px; 
-            border-radius: 50%; 
-            border: 15px solid #111; 
-            box-shadow: 0 0 60px rgba(0,0,0,0.9), 0 0 20px rgba(109,0,0,0.3);
-            overflow: hidden; background: #000; cursor: none;
+            position: relative; width: 600px; height: 600px; border-radius: 50%; 
+            border: 15px solid #111; box-shadow: 0 0 50px #000; overflow: hidden; cursor: none;
         }
-
-        canvas { position: absolute; top: 0; left: 0; }
-
-        /* 상태창 패널 디자인 개선 */
-        #hud { 
-            width: 280px; 
-            background: rgba(10, 10, 10, 0.9); 
-            padding: 30px; border-radius: 4px; 
-            border: 1px solid var(--rose-red);
-            box-shadow: 0 0 30px rgba(74, 4, 4, 0.3);
-        }
-
-        .hud-label { color: #666; font-size: 0.8em; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
-        .hud-value { font-size: 1.8em; margin-bottom: 25px; border-bottom: 1px solid #222; padding-bottom: 10px; }
-        
-        #darts-left-display { color: #ff3e3e; font-weight: bold; text-shadow: 0 0 10px rgba(255, 62, 62, 0.5);}
-        #total-score-val { color: var(--gold); }
-        
-        input, button { 
-            width: 100%; padding: 15px; background: #111; border: 1px solid var(--gold); 
-            color: var(--gold); font-family: serif; font-size: 1.1em; margin-top: 10px; outline: none;
-        }
-
-        button { background: var(--rose-red); color: white; border: none; cursor: pointer; transition: 0.3s; font-weight: bold; }
-        button:hover { background: #800; box-shadow: 0 0 15px rgba(74,4,4,0.6); }
-
-        /* 가짜 커서 (다트 핀 모양) */
-        #fake-cursor { 
-            position: absolute; width: 12px; height: 12px; background: #fff; border-radius: 50%; 
-            pointer-events: none; transform: translate(-50%, -50%); z-index: 10;
-            box-shadow: 0 0 15px #fff, 0 0 5px var(--gold);
-        }
+        #hud { width: 280px; background: rgba(0,0,0,0.85); padding: 30px; border: 1px solid var(--red); }
+        .stat { margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 10px; }
+        .label { color: #888; font-size: 0.8em; text-transform: uppercase; }
+        .val { font-size: 1.8em; color: var(--gold); }
+        #over-ui { display:none; margin-top: 20px; }
+        input, button { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid var(--gold); background: #000; color: var(--gold); }
+        button { background: var(--red); color: white; border: none; font-weight: bold; cursor: pointer; }
+        #leaderboard { width: 920px; margin: 50px 0; background: rgba(0,0,0,0.9); padding: 30px; border-top: 3px solid var(--gold); }
+        #rankList { list-style: none; padding: 0; }
+        #rankList li { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #1a1a1a; }
+        #fake-cursor { position: absolute; width: 12px; height: 12px; background: #fff; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 10; box-shadow: 0 0 10px var(--gold); }
     </style>
 </head>
 <body>
     <h1>CASINO EDEN</h1>
-    <div id="description">10발의 다트로 완성하는 불멸의 기록</div>
-    
     <div id="game-container">
         <div id="canvas-wrapper">
             <div id="fake-cursor"></div>
             <canvas id="dartBoard" width="600" height="600"></canvas>
         </div>
         <div id="hud">
-            <div class="hud-label">Darts Remaining</div>
-            <div id="darts-left-display" class="hud-value">10개</div>
-            
-            <div class="hud-label">Total Score</div>
-            <div class="hud-value"><span id="total-score-val">0</span> PT</div>
-            
-            <div class="hud-label">Hit</div>
-            <div id="hit-value" style="color:#f0f0f0;" class="hud-value">0</div>
-
-            <div id="game-over-zone" style="display:none; flex-direction:column; margin-top:20px;">
-                <input type="text" id="playerName" placeholder="NAME (3~10자)">
-                <button id="submitBtn" onclick="submitScore()">REGISTER LEGACY</button>
+            <div class="stat"><div class="label">Ammo</div><div id="darts" class="val">10</div></div>
+            <div class="stat"><div class="label">Total Score</div><div id="total" class="val">0 PT</div></div>
+            <div class="stat"><div class="label">Hit</div><div id="last-hit" class="val">0</div></div>
+            <div id="over-ui">
+                <input type="text" id="nick" placeholder="NAME">
+                <button onclick="save()">REGISTER LEGACY</button>
             </div>
         </div>
     </div>
+    <div id="leaderboard">
+        <h2 style="color:var(--gold); text-align:center;">전설의 전당 (Top 10)</h2>
+        <ul id="rankList">데이터 동기화 중...</ul>
+    </div>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>
-        const canvas = document.getElementById('dartBoard');
-        const ctx = canvas.getContext('2d');
-        const fakeCursor = document.getElementById('fake-cursor');
-        
-        // 점수 및 게임 상태 변수 초기화 (undefined/NaN 방지)
-        let totalScore = 0;
-        let dartsLeft = 10;
-        let isGameOver = false;
-        let mouseX = 300;
-        let mouseY = 300;
-        let finalX = 300;
-        let finalY = 300;
-        let rotation = 0;
-        let rotationSpeed = 0.05;
-        const SHAKE = 85; // 손떨림 강도 (미친 난이도)
+        const firebaseConfig = {
+            apiKey: "AIzaSyC4cS9GhEAz32y9k11o5B950mbWxULZ1BY",
+            databaseURL: "https://eden-dc2c5-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        // 다트판 이미지 로드 및 캔버스 규격 맞춤
-        const dartImg = new Image();
-        dartImg.src = 'https://i.imgur.com/rXwHwV3.png'; // 원형 다트판 이미지
+        const cvs = document.getElementById('dartBoard');
+        const ctx = cvs.getContext('2d');
+        const img = new Image();
+        // ★ 중요: 외부 링크가 아닌, 사용자가 GitHub에 올린 로컬 이미지 파일을 직접 사용합니다.
+        img.src = 'image_6.png'; 
 
-        dartImg.onload = () => {
-            // 이미지 로드 후 애니메이션 시작
-            changeWind();
-            animate();
+        let score = 0, darts = 10, over = false;
+        let mx = 300, my = 300, rot = 0;
+
+        img.onload = () => { loop(); };
+        img.onerror = () => { ctx.fillStyle="#fff"; ctx.fillText("이미지 로드 실패: image_6.png 파일을 확인하세요.", 150, 300); };
+
+        function loop() {
+            if(over) return;
+            ctx.clearRect(0,0,600,600);
+            ctx.save();
+            ctx.translate(300,300);
+            rot += 0.04;
+            ctx.rotate(rot);
+            // 이미지를 캔버스 600x600 규격에 꽉 차게 그립니다.
+            ctx.drawImage(img, -300, -300, 600, 600);
+            ctx.restore();
+            
+            // 수전증 효과
+            window.tx = mx + (Math.random()-0.5)*80;
+            window.ty = my + (Math.random()-0.5)*80;
+            document.getElementById('fake-cursor').style.left = window.tx+'px';
+            document.getElementById('fake-cursor').style.top = window.ty+'px';
+            
+            requestAnimationFrame(loop);
+        }
+
+        cvs.onmousemove = (e) => { const r = cvs.getBoundingClientRect(); mx = e.clientX-r.left; my = e.clientY-r.top; };
+        cvs.onmousedown = () => {
+            if(over || darts <= 0) return;
+            
+            const dist = Math.sqrt((window.tx-300)**2 + (window.ty-300)**2);
+            let hit = 0;
+
+            // 점수 계산 (NaN 방지 및 규격 조정)
+            if(dist < 15) hit = 50;
+            else if(dist < 35) hit = 25;
+            else if(dist < 280) hit = Math.floor(Math.random()*20) + 1;
+            else hit = 0;
+
+            score += hit;
+            darts--;
+            document.getElementById('last-hit').innerText = hit;
+            document.getElementById('total').innerText = score + " PT";
+            document.getElementById('darts').innerText = darts;
+            
+            if(darts <= 0) { over = true; document.getElementById('over-ui').style.display='block'; }
         };
 
-        function animate() {
-            if (isGameOver) return;
-
-            // 손떨림 효과 계산
-            finalX = mouseX + (Math.random() - 0.5) * SHAKE;
-            finalY = mouseY + (Math.random() - 0.5) * SHAKE;
-            fakeCursor.style.left = finalX + 'px';
-            fakeCursor.style.top = finalY + 'px';
-
-            ctx.clearRect(0, 0, 600, 600);
-            ctx.save();
-            ctx.translate(300, 300);
-            
-            // 다트판 미친 회전 적용
-            rotation += rotationSpeed;
-            if(Math.random() < 0.02) rotationSpeed = (Math.random() - 0.5) * 0.15;
-            ctx.rotate(rotation);
-            
-            // 이미지를 캔버스 크기(600x600)에 꽉 차게 그림 (규격 오류 해결)
-            ctx.drawImage(dartImg, -300, -300, 600, 600);
-            ctx.restore();
-
-            requestAnimationFrame(animate);
+        function save() {
+            const n = document.getElementById('nick').value;
+            if(!n) return alert("이름을 입력하세요.");
+            db.ref('rankingPro').push({name:n, score:score}).then(()=>location.reload());
         }
 
-        // 바람 변수 및 효과
-        let windX = 0;
-        let windY = 0;
-        function changeWind() {
-            if (isGameOver) return;
-            // 미친 바람 세기
-            windX = (Math.random() - 0.5) * 60; 
-            windY = (Math.random() - 0.5) * 60;
-            setTimeout(changeWind, 3000);
-        }
-
-        canvas.addEventListener('mousemove', (e) => {
-            const r = canvas.getBoundingClientRect();
-            mouseX = e.clientX - r.left;
-            mouseY = e.clientY - r.top;
+        db.ref('rankingPro').on('value', (s) => {
+            const list = document.getElementById('rankList');
+            list.innerHTML = '';
+            let arr = [];
+            s.forEach(c => { arr.push(c.val()); });
+            arr.sort((a,b) => b.score - a.score);
+            arr.slice(0,10).forEach((v, i) => {
+                list.innerHTML += `<li><span>#${i+1} ${v.name}</span><span>${v.score} PT</span></li>`;
+            });
+            if(arr.length === 0) list.innerHTML = "<li>등록된 데이터가 없습니다.</li>";
         });
-
-        canvas.addEventListener('mousedown', () => {
-            if (isGameOver || dartsLeft <= 0) return;
-            
-            // 최종 명중 좌표 (손떨림 + 바람 적용)
-            const sx = finalX + windX;
-            const sy = finalY + windY;
-            
-            // 중앙(300,300)으로부터의 거리 계산
-            const dist = Math.sqrt((sx - 300)**2 + (sy - 300)**2);
-            
-            // 점수 영역 정의 (600x600 규격 기준)
-            const radii = { bull: 15, singlebull: 35, double_e: 280, triple_s: 160, triple_e: 180, double_s: 260 };
-            let hitScore = 0;
-
-            if (dist > radii.double_e) {
-                hitScore = 0; // 판 밖
-            } else if (dist <= radii.bull) {
-                hitScore = 50; // Bull's Eye
-            } else if (dist <= radii.singlebull) {
-                hitScore = 25; // Single Bull
-            } else {
-                // 구획(Sector)별 점수 계산
-                const angle = Math.atan2(sy - 300, sx - 300) - rotation; // 회전각 고려
-                const sectorScores = [6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10]; // 점수 배치
-                const sectorSize = (Math.PI * 2) / 20;
-                let sectorIndex = Math.floor((angle + Math.PI + (sectorSize / 2)) / sectorSize) % 20;
-                hitScore = sectorScores[sectorIndex];
-
-                // 트리플/더블 링 여부 판단
-                if (dist >= radii.triple_s && dist <= radii.triple_e) {
-                    hitScore *= 3; // Triple
-                } else if (dist >= radii.double_s && dist <= radii.double_e) {
-                    hitScore *= 2; // Double
-                }
-            }
-
-            // 점수 업데이트 (NaN 방지를 위해 숫자형으로 확인)
-            if (!isNaN(hitScore)) {
-                totalScore += hitScore;
-                document.getElementById('hit-value').innerText = hitScore;
-                document.getElementById('total-score-val').innerText = totalScore;
-            } else {
-                console.error("Score calculation error: NaN");
-            }
-
-            dartsLeft--;
-            document.getElementById('darts-left-display').innerText = `${dartsLeft}개`;
-            
-            if (dartsLeft <= 0) {
-                isGameOver = true;
-                document.getElementById('game-over-zone').style.display = 'flex';
-                fakeCursor.style.display = 'none';
-            }
-        });
-
-        // 랭킹 등록 함수 (서버 연동은 추후 추가)
-        function submitScore() {
-            const name = document.getElementById('playerName').value.trim();
-            if (name.length < 3) return alert("닉네임을 3자 이상 입력하세요.");
-            alert(`${name}님, ${totalScore} PT로 등록되었습니다! (서버 연동 전입니다)`);
-            location.reload();
-        }
     </script>
 </body>
 </html>

@@ -4,63 +4,72 @@
     <meta charset="UTF-8">
     <title>CASINO EDEN</title>
     <style>
-        /* 전체 테마 색상 수정: 노란색 -> 어두운 빨간색 */
+        /* 테마 수정: 더 어두운 빨간색 (#7a0000) */
+        :root {
+            --dark-red: #7a0000;
+            --deep-black: #0d0d0d;
+        }
+
         body { 
-            margin: 0; background-color: #121212; color: white; 
+            margin: 0; background-color: var(--deep-black); color: white; 
             font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; 
         }
         
         #tab-menu { display: flex; gap: 10px; margin-top: 20px; }
         .tab-btn { padding: 10px 30px; background: #222; border: 1px solid #444; color: #888; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .tab-btn.active { background: #b30000; color: #fff; border-color: #b30000; } /* 어두운 빨간색 */
+        .tab-btn.active { background: var(--dark-red); color: #fff; border-color: var(--dark-red); }
 
-        /* 제목 및 소제목 수정 */
-        h1 { color: #b30000; font-size: 3.5em; margin-top: 20px; margin-bottom: 5px; font-family: 'Batang', 'Gungsuh', serif; letter-spacing: 5px; }
-        #description { color: #666; margin-bottom: 30px; font-size: 1em; font-weight: bold; }
+        h1 { color: var(--dark-red); font-size: 3.5em; margin-top: 20px; margin-bottom: 5px; font-family: 'Batang', 'Gungsuh', serif; letter-spacing: 5px; }
+        #description { color: #555; margin-bottom: 30px; font-size: 1em; font-weight: bold; }
 
         .game-section { display: none; flex-direction: column; align-items: center; }
         .game-section.active { display: flex; }
 
-        /* 다트판 (기존 로직 및 디자인 절대 보존) */
+        /* 다트판 (완전 보존) */
         #canvas-wrapper { position: relative; width: 600px; height: 600px; border-radius: 50%; border: 10px solid #222; overflow: hidden; cursor: none; background: #000; }
-        #hud { width: 250px; background: #1e1e1e; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        #hud { width: 250px; background: #1a1a1a; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .stat-box { margin-bottom: 20px; }
         .label { color: #aaa; font-size: 0.8em; margin-bottom: 5px; text-transform: uppercase; }
         .val { font-size: 2em; font-weight: bold; color: #fff; }
-        #total-score { color: #b30000; } /* 다트 스코어도 빨간색으로 통일 */
+        #total-score { color: var(--dark-red); }
 
-        /* 슬롯머신 수정본 */
-        #slot-machine { width: 700px; background: #1a1a1a; padding: 50px; border-radius: 20px; border: 8px solid #333; text-align: center; box-shadow: inset 0 0 50px #000; }
+        /* 슬롯머신 수정본: 수직 롤링 애니메이션 */
+        #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
         .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
-        .slot-reel { 
-            width: 120px; height: 160px; background: linear-gradient(to bottom, #111, #333, #111); 
-            border: 4px solid #b30000; font-size: 4.5em; display: flex; align-items: center; 
-            justify-content: center; border-radius: 10px; color: #fff; overflow: hidden;
+        
+        .slot-window {
+            width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red);
+            border-radius: 10px; overflow: hidden; position: relative;
         }
-        #slot-msg { height: 40px; color: #b30000; margin-bottom: 10px; font-weight: bold; font-size: 1.2em; }
+        
+        .slot-reel {
+            position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column;
+            transition: top 0s; /* 기본은 즉시 이동 */
+        }
+        
+        .slot-item {
+            width: 100%; height: 160px; display: flex; align-items: center; justify-content: center;
+            font-size: 4.5em; flex-shrink: 0;
+        }
+
+        #slot-msg { height: 40px; color: var(--dark-red); margin-bottom: 10px; font-weight: bold; font-size: 1.2em; }
 
         input { width: 100%; padding: 12px; margin-bottom: 10px; background: #222; border: 1px solid #444; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 18px; background: #b30000; border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 1.2em; transition: 0.2s; }
-        button:hover { background: #ff0000; box-shadow: 0 0 20px rgba(179, 0, 0, 0.4); }
+        button { width: 100%; padding: 18px; background: var(--dark-red); border: none; color: #fff; font-weight: bold; cursor: pointer; font-size: 1.2em; }
+        button:hover { background: #990000; }
 
         /* 랭킹 섹션 */
-        .leaderboard { width: 890px; margin: 40px 0; background: #1e1e1e; padding: 25px; border-radius: 10px; }
+        .leaderboard { width: 890px; margin: 40px 0; background: #1a1a1a; padding: 25px; border-radius: 10px; }
         .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .board-header h2 { margin: 0; color: #b30000; font-size: 1.5em; }
+        .board-header h2 { margin: 0; color: var(--dark-red); font-size: 1.5em; }
         .admin-reset-btn { width: auto; padding: 5px 10px; font-size: 0.7em; background: #333; color: #666; }
-        .rankList { list-style: none; padding: 0; margin: 0; }
+        .rankList { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
         .rankList li { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #2a2a2a; }
         
-        /* 다트 커서 */
         #fake-cursor { position: absolute; width: 10px; height: 10px; background: white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 10; box-shadow: 0 0 10px #fff; }
 
-        /* 슬롯 굴러가는 애니메이션 */
-        @keyframes roll {
-            0% { transform: translateY(-50px); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translateY(50px); opacity: 0; }
-        }
-        .rolling { animation: roll 0.1s infinite; }
+        /* 애니메이션 효과 */
+        .rolling { transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95) !important; }
     </style>
 </head>
 <body>
@@ -86,29 +95,29 @@
             </div>
         </div>
         <div class="leaderboard">
-            <div class="board-header"><h2>전설의 전당(TOP 10)</h2><button class="admin-reset-btn" onclick="adminReset('dart')">RESET DATA</button></div>
+            <div class="board-header"><h2>명예의 전당(TOP 10)</h2><button class="admin-reset-btn" onclick="adminReset('dart')">RESET DATA</button></div>
             <ul id="rankList" class="rankList"></ul>
         </div>
     </div>
 
     <div id="slot-section" class="game-section">
         <div id="slot-machine">
-            <div id="slot-msg">PRESS SPIN TO TEST YOUR LUCK</div>
+            <div id="slot-msg">WHEEL OF DESTINY</div>
             <div class="slot-container">
-                <div id="reel1" class="slot-reel">♠</div>
-                <div id="reel2" class="slot-reel">◆</div>
-                <div id="reel3" class="slot-reel">♥</div>
-                <div id="reel4" class="slot-reel">♣</div>
+                <div class="slot-window"><div id="reel1" class="slot-reel"></div></div>
+                <div class="slot-window"><div id="reel2" class="slot-reel"></div></div>
+                <div class="slot-window"><div id="reel3" class="slot-reel"></div></div>
+                <div class="slot-window"><div id="reel4" class="slot-reel"></div></div>
             </div>
             <button id="spin-btn" onclick="spinSlot()">SPIN</button>
             <div id="slot-over-ui" style="display:none; margin-top:20px;">
-                <p style="color:#b30000; font-weight:bold; font-size:1.5em;">🎉 JACKPOT! ENTER YOUR NAME</p>
+                <p style="color:var(--dark-red); font-weight:bold; font-size:1.5em;">🎊 SUCCESS! ENTER YOUR NAME</p>
                 <input type="text" id="slot-nick" placeholder="NICKNAME">
                 <button onclick="saveResult('slot')">RECORD LEGACY</button>
             </div>
         </div>
         <div class="leaderboard">
-            <div class="board-header"><h2>SLOT TOP 10</h2><button class="admin-reset-btn" onclick="adminReset('slot')">RESET DATA</button></div>
+            <div class="board-header"><h2>명예의 전당(TOP 10)</h2><button class="admin-reset-btn" onclick="adminReset('slot')">RESET DATA</button></div>
             <ul id="slotRankList" class="rankList"></ul>
         </div>
     </div>
@@ -127,7 +136,9 @@
             document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(game + '-section').classList.add('active');
-            event.target.classList.add('active');
+            // 탭 버튼 활성화 상태 수동 업데이트
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(t => { if(t.innerText.includes(game.toUpperCase())) t.classList.add('active'); });
         }
 
         /* --- 다트 게임 로직 (불변) --- */
@@ -153,93 +164,127 @@
         };
         function windTick() { if(over) return; wx = (Math.random()-0.5)*50; wy = (Math.random()-0.5)*50; document.getElementById('wind-indicator').innerText = `WIND: ${Math.abs(Math.floor(wx))}m/s`; setTimeout(windTick, 2500); }
 
-        /* --- 슬롯머신 로직 (수정본) --- */
-        let lastWinAmt = 0;
-        const symbols = ['♠','◆','♥','♣'];
-        // 꽝 확률을 높이기 위한 가중치 풀 (클로버 비율 압도적 증가)
+        /* --- 슬롯머신 로직 (수직 롤링 및 꽝 강화) --- */
+        const slotItems = ['♠','◆','♥','♣','●','■']; 
         const weightedPool = [
-            '♠','♠','♠', // 스페이드 3개
-            '◆','◆','◆', // 다이아 3개
-            '♥','♥','♥','♥', // 하트 4개
-            '♣','♣','♣','♣','♣','♣','♣','♣','♣','♣','♣','♣','♣','♣','♣' // 클로버 다수 (꽝)
+            '♠','♠', '◆','◆', '♥','♥','♥', '♣','♣','♣',
+            '●','●','●','●','●','●','●','●','●','●', // 꽝 강화
+            '■','■','■','■','■','■','■','■','■','■'  // 꽝 강화
         ];
+        
+        // 릴 초기 세팅
+        function initReels() {
+            for(let i=1; i<=4; i++) {
+                const reel = document.getElementById('reel'+i);
+                reel.innerHTML = '';
+                for(let j=0; j<20; j++) {
+                    const div = document.createElement('div');
+                    div.className = 'slot-item';
+                    div.innerText = slotItems[Math.floor(Math.random()*slotItems.length)];
+                    reel.appendChild(div);
+                }
+            }
+        }
+        initReels();
 
+        let currentWinC = 0;
         function spinSlot() {
             document.getElementById('slot-over-ui').style.display = 'none';
-            document.getElementById('slot-msg').innerText = "Good Luck...";
-            
+            document.getElementById('slot-msg').innerText = "ROLLING...";
             const btn = document.getElementById('spin-btn');
             btn.disabled = true;
 
-            // 회전 모션 시작
+            const results = [];
             for(let i=1; i<=4; i++) {
-                document.getElementById('reel'+i).classList.add('rolling');
-            }
+                const reel = document.getElementById('reel'+i);
+                const finalSymbol = weightedPool[Math.floor(Math.random()*weightedPool.length)];
+                results.push(finalSymbol);
 
-            const res = [];
-            for(let i=0; i<4; i++) {
-                res.push(weightedPool[Math.floor(Math.random()*weightedPool.length)]);
-            }
+                // 롤링 연출: 마지막 아이템을 결과값으로 교체
+                reel.lastElementChild.innerText = finalSymbol;
+                reel.style.top = "0px";
+                reel.classList.remove('rolling');
+                
+                void reel.offsetWidth; // 리플로우 강제
 
-            // 순차적으로 결과 멈춤
-            for(let i=1; i<=4; i++) {
-                setTimeout(() => {
-                    const reel = document.getElementById('reel'+i);
-                    reel.classList.remove('rolling');
-                    reel.innerText = res[i-1];
-                }, i * 500);
+                reel.classList.add('rolling');
+                reel.style.top = "-3040px"; // 160px * 19칸 이동
             }
 
             setTimeout(() => {
                 btn.disabled = false;
-                if(res.every(val => val === res[0])) {
-                    const symbol = res[0];
+                if(results.every(val => val === results[0])) {
+                    const sym = results[0];
                     let win = 0;
-                    if(symbol === '♠') win = 1000;
-                    else if(symbol === '◆') win = 600;
-                    else if(symbol === '♥') win = 200;
-                    else if(symbol === '♣') win = 0;
+                    if(sym === '♠') win = 1000;
+                    else if(sym === '◆') win = 600;
+                    else if(sym === '♥') win = 200;
+                    else if(sym === '♣') win = 100;
+                    else win = 0; // 동그라미 네모는 성공해도 0 (실질적 꽝)
 
                     if(win > 0) {
-                        lastWinAmt = win;
-                        document.getElementById('slot-msg').innerText = `JACKPOT! YOU WON ${win} PT`;
+                        currentWinC = win;
+                        document.getElementById('slot-msg').innerText = `SUCCESS! +${win} C`;
                         document.getElementById('slot-over-ui').style.display = 'block';
                     } else {
-                        document.getElementById('slot-msg').innerText = "CLOVER... NO REWARD.";
+                        document.getElementById('slot-msg').innerText = "FAILED. (NOT A LEGACY SYMBOL)";
                     }
                 } else {
                     document.getElementById('slot-msg').innerText = "FAILED. TRY AGAIN.";
                 }
-            }, 2200);
+                // 릴 위치 초기화 (다음 스핀을 위해)
+                for(let i=1; i<=4; i++) {
+                    const reel = document.getElementById('reel'+i);
+                    reel.classList.remove('rolling');
+                    reel.style.top = "0px";
+                    reel.firstElementChild.innerText = results[i-1];
+                }
+            }, 2500);
         }
 
         /* --- 공통 기능 --- */
         function saveResult(type) {
             if(type === 'dart') {
                 const n = document.getElementById('nick').value; if(!n) return;
-                db.ref('rankingPro').push({name:n, score:score}).then(() => location.reload());
+                db.ref('rankingPro').push({name:n, score:score}).then(() => {
+                    location.reload();
+                });
             } else {
                 const n = document.getElementById('slot-nick').value; if(!n) return;
-                db.ref('slotRanking').push({name:n, score:lastWinAmt}).then(() => location.reload());
+                db.ref('slotRanking_v2').push({name:n, score:currentWinC, date: Date.now()}).then(() => {
+                    // 탭 이동 없이 랭킹 리스트만 갱신 (reload 시 기본 탭이 다트이므로 reload 대신 수동 갱신 권장하나 여기선 reload 방지 로직)
+                    document.getElementById('slot-over-ui').style.display = 'none';
+                    document.getElementById('slot-nick').value = '';
+                    alert("Legacy Recorded.");
+                });
             }
         }
 
         function adminReset(type) {
             if(prompt("Password?") === "1119") {
-                db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking').remove().then(() => alert("Cleared."));
+                db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v2').remove().then(() => alert("Cleared."));
             }
         }
 
-        function loadRank(path, listId) {
-            db.ref(path).on('value', (snap) => {
-                const list = document.getElementById(listId); list.innerHTML = '';
-                let arr = []; snap.forEach(c => arr.push(c.val()));
-                arr.sort((a,b) => b.score - a.score).slice(0,10).forEach((v, i) => {
-                    list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
-                });
+        // 다트 랭킹 (Top 10)
+        db.ref('rankingPro').on('value', (snap) => {
+            const list = document.getElementById('rankList'); list.innerHTML = '';
+            let arr = []; snap.forEach(c => arr.push(c.val()));
+            arr.sort((a,b) => b.score - a.score).slice(0,10).forEach((v, i) => {
+                list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
             });
-        }
-        loadRank('rankingPro', 'rankList'); loadRank('slotRanking', 'slotRankList');
+        });
+
+        // 슬롯 랭킹 (누적 기록 순차 출력)
+        db.ref('slotRanking_v2').on('value', (snap) => {
+            const list = document.getElementById('slotRankList'); list.innerHTML = '';
+            let arr = []; snap.forEach(c => arr.push(c.val()));
+            // 최신순으로 정렬하여 누적 표시
+            arr.reverse().forEach((v) => {
+                list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
+            });
+            if(arr.length === 0) list.innerHTML = "<li>No records found.</li>";
+        });
     </script>
 </body>
 </html>

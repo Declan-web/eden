@@ -75,7 +75,7 @@
                 <div id="wind-indicator">Calculating...</div>
                 <div id="over-ui" style="display:none;">
                     <input type="text" id="nick-dart" placeholder="NICKNAME">
-                    <button onclick="saveResult('dart')">RECORD LEGACY</button>
+                    <button id="save-dart-btn" onclick="saveResult('dart')">RECORD LEGACY</button>
                 </div>
             </div>
         </div>
@@ -99,7 +99,7 @@
             <div id="slot-over-ui" style="display:none; margin-top:20px;">
                 <p style="color:var(--dark-red); font-weight:bold; font-size:1.5em;">SUCCESS!</p>
                 <input type="text" id="slot-nick" placeholder="NICKNAME">
-                <button onclick="saveResult('slot')">RECORD LEGACY</button>
+                <button id="save-slot-btn" onclick="saveResult('slot')">RECORD LEGACY</button>
             </div>
         </div>
         <div class="leaderboard">
@@ -215,47 +215,41 @@
             }, 3500);
         }
 
-        /* --- 기록 저장 로직 보강 --- */
-        async function saveResult(type) {
+        /* --- 기록 저장 (완벽 수리) --- */
+        function saveResult(type) {
             const nickId = (type === 'dart') ? 'nick-dart' : 'slot-nick';
+            const btnId = (type === 'dart') ? 'save-dart-btn' : 'save-slot-btn';
             const name = document.getElementById(nickId).value.trim();
+            const btn = document.getElementById(btnId);
+
             if(!name) return alert("전설의 이름을 입력하세요.");
+            btn.disabled = true;
 
-            const btn = event.target;
-            btn.disabled = true; // 중복 클릭 방지
+            const data = {
+                name: name,
+                score: (type === 'dart') ? parseInt(document.getElementById('total-score').innerText) : currentWinC,
+                date: firebase.database.ServerValue.TIMESTAMP
+            };
 
-            try {
-                if(type === 'dart') {
-                    // 전역 변수 score를 직접 사용하거나 innerText를 숫자로 변환
-                    const finalScore = parseInt(document.getElementById('total-score').innerText) || score;
-                    
-                    // .push() 이후 .set()까지 완료될 때까지 대기
-                    await db.ref('rankingPro').push({
-                        name: name,
-                        score: finalScore,
-                        date: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    
-                    alert("전설이 기록되었습니다."); 
-                    localStorage.setItem('activeGameTab', 'dart');
-                    location.reload(); 
-                } else {
-                    await db.ref('slotRanking_v3').push({
-                        name: name,
-                        score: currentWinC,
-                        date: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    
-                    alert("전설이 기록되었습니다."); 
-                    document.getElementById('slot-over-ui').style.display = 'none';
-                    document.getElementById('slot-nick').value = '';
+            const path = (type === 'dart') ? 'rankingPro' : 'slotRanking_v3';
+
+            // .push().set() 구조를 명확히 하여 데이터 누락 방지
+            db.ref(path).push().set(data, (error) => {
+                if (error) {
+                    alert("기록 실패: " + error.message);
                     btn.disabled = false;
+                } else {
+                    alert("전설이 기록되었습니다.");
+                    if(type === 'dart') {
+                        localStorage.setItem('activeGameTab', 'dart');
+                        location.reload();
+                    } else {
+                        document.getElementById('slot-over-ui').style.display = 'none';
+                        document.getElementById(nickId).value = '';
+                        btn.disabled = false;
+                    }
                 }
-            } catch (err) {
-                console.error("Save Error:", err);
-                alert("기록 중 오류가 발생했습니다.");
-                btn.disabled = false;
-            }
+            });
         }
 
         function adminReset(type) {
@@ -265,7 +259,11 @@
         // 랭킹 리스너
         db.ref('rankingPro').on('value', (snap) => {
             const list = document.getElementById('rankList'); list.innerHTML = '';
-            let arr = []; snap.forEach(c => arr.push(c.val()));
+            let arr = []; 
+            snap.forEach(c => {
+                let val = c.val();
+                if(val) arr.push(val);
+            });
             arr.sort((a,b) => b.score - a.score).slice(0,10).forEach((v, i) => {
                 list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
             });
@@ -273,7 +271,11 @@
 
         db.ref('slotRanking_v3').on('value', (snap) => {
             const list = document.getElementById('slotRankList'); list.innerHTML = '';
-            let arr = []; snap.forEach(c => arr.push(c.val()));
+            let arr = []; 
+            snap.forEach(c => {
+                let val = c.val();
+                if(val) arr.push(val);
+            });
             arr.reverse().forEach((v) => {
                 list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
             });

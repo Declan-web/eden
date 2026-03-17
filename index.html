@@ -4,26 +4,37 @@
     <meta charset="UTF-8">
     <title>CASINO EDEN</title>
     <style>
+        /* 고딕체 및 전체 디자인 수정 */
         :root { --red: #5e0000; --gold: #d4af37; --black: #0a0a0a; }
         body { 
             margin: 0; background: radial-gradient(circle, var(--red) 0%, var(--black) 100%); 
-            color: #eee; font-family: 'Georgia', serif; display: flex; flex-direction: column; align-items: center; 
+            color: #eee; font-family: 'Pretendard', 'Malgun Gothic', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; 
         }
-        h1 { color: var(--gold); font-size: 3.5em; letter-spacing: 10px; margin: 40px 0 10px; text-shadow: 0 0 20px rgba(212,175,55,0.4); }
+        h1 { color: var(--gold); font-size: 3.5em; letter-spacing: 10px; margin: 40px 0 10px; font-weight: 900; }
+        
         #game-container { display: flex; gap: 30px; margin-top: 20px; }
         #canvas-wrapper { 
             position: relative; width: 600px; height: 600px; border-radius: 50%; 
             border: 15px solid #111; box-shadow: 0 0 50px #000; overflow: hidden; cursor: none;
         }
-        #hud { width: 280px; background: rgba(0,0,0,0.8); padding: 30px; border: 1px solid var(--red); box-shadow: 0 0 20px rgba(94,0,0,0.5); }
-        .stat { margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 10px; }
-        .label { color: #888; font-size: 0.8em; text-transform: uppercase; }
-        .val { font-size: 1.8em; color: var(--gold); }
-        input, button { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid var(--gold); background: #000; color: var(--gold); outline: none; }
+        
+        #hud { width: 280px; background: rgba(0,0,0,0.85); padding: 30px; border: 1px solid var(--red); }
+        .stat { margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .label { color: #888; font-size: 0.75em; text-transform: uppercase; font-weight: bold; }
+        .val { font-size: 1.8em; color: var(--gold); font-weight: bold; }
+        
+        input, button { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid var(--gold); background: #000; color: var(--gold); font-family: inherit; }
         button { background: var(--red); color: white; border: none; font-weight: bold; cursor: pointer; }
-        #leaderboard { width: 920px; margin: 50px 0; background: rgba(0,0,0,0.9); padding: 30px; border: 1px solid #333; border-top: 3px solid var(--gold); }
+        
+        #leaderboard { width: 920px; margin: 50px 0; background: rgba(0,0,0,0.9); padding: 30px; border: 1px solid #333; }
         #rankList { list-style: none; padding: 0; }
         #rankList li { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #1a1a1a; }
+        
+        #admin-zone { margin-bottom: 50px; opacity: 0.3; transition: 0.3s; }
+        #admin-zone:hover { opacity: 1; }
+        #admin-zone button { background: transparent; color: #444; border: 1px solid #444; width: auto; padding: 5px 15px; font-size: 0.8em; }
+
         #fake-cursor { position: absolute; width: 12px; height: 12px; background: #fff; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 10; box-shadow: 0 0 10px var(--gold); }
     </style>
 </head>
@@ -35,33 +46,33 @@
             <canvas id="dartBoard" width="600" height="600"></canvas>
         </div>
         <div id="hud">
-            <div class="stat"><div class="label">Ammo</div><div id="darts" class="val">10</div></div>
-            <div class="stat"><div class="label">Total</div><div id="total" class="val">0 PT</div></div>
-            <div id="wind-box" style="color:#ff7676; font-size:0.9em; text-align:center;">바람 계산 중...</div>
+            <div class="stat"><div class="label">남은 다트</div><div id="darts" class="val">10</div></div>
+            <div class="stat"><div class="label">이번에 맞춘 점수</div><div id="last-hit" class="val">0</div></div>
+            <div class="stat"><div class="label">누적 점수</div><div id="total" class="val">0 PT</div></div>
+            <div id="wind-box" style="color:#ff7676; font-size:0.9em;">바람 계산 중...</div>
             <div id="over-ui" style="display:none">
                 <input type="text" id="nick" placeholder="NICKNAME">
-                <button onclick="send()">RECORD LEGEND</button>
+                <button onclick="send()">전설 기록</button>
             </div>
         </div>
     </div>
+
     <div id="leaderboard">
-        <h2 style="color:var(--gold); text-align:center; letter-spacing:3px;">전설의 전당 (TOP 10)</h2>
-        <ul id="rankList">데이터를 동기화 중입니다...</ul>
+        <h2 style="color:var(--gold); text-align:center;">전설의 전당 (TOP 10)</h2>
+        <ul id="rankList">동기화 중...</ul>
+    </div>
+
+    <div id="admin-zone">
+        <button onclick="resetRanking()">System Reset</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // 보내주신 설정값으로 업데이트
         const firebaseConfig = {
             apiKey: "AIzaSyC4cS9GhEAz32y9k11o5B950mbWxULZ1BY",
-            authDomain: "eden-dc2c5.firebaseapp.com",
-            databaseURL: "https://eden-dc2c5-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "eden-dc2c5",
-            storageBucket: "eden-dc2c5.firebasestorage.app",
-            messagingSenderId: "889059945973",
-            appId: "1:889059945973:web:211078b67f46e6796d04bc"
+            databaseURL: "https://eden-dc2c5-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -69,13 +80,12 @@
         const cvs = document.getElementById('dartBoard');
         const ctx = cvs.getContext('2d');
         const img = new Image();
-        img.src = 'image_6.png'; // 깃허브에 올리신 파일명
+        img.src = 'image_6.png'; 
 
         let score = 0, darts = 10, over = false;
         let mx = 300, my = 300, rot = 0, wx = 0, wy = 0;
 
         img.onload = () => { loop(); windTick(); };
-        img.onerror = () => { alert("이미지를 불러올 수 없습니다!"); };
 
         function loop() {
             if(over) return;
@@ -84,10 +94,16 @@
             ctx.translate(300,300);
             rot += 0.04;
             ctx.rotate(rot);
-            ctx.drawImage(img, -300, -300, 600, 600);
+            
+            // [규격 수정] 이미지 비율 유지하며 중앙에 꽉 차게 그리기
+            const scale = Math.max(600 / img.width, 600 / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, -w/2, -h/2, w, h);
+            
             ctx.restore();
             
-            // 수전증 효과
+            // 수전증 수치 유지
             let tx = mx + (Math.random()-0.5)*85;
             let ty = my + (Math.random()-0.5)*85;
             document.getElementById('fake-cursor').style.left = tx+'px';
@@ -102,13 +118,32 @@
             if(over || darts <= 0) return;
             const finalX = window.targetX + wx, finalY = window.targetY + wy;
             const d = Math.sqrt((finalX-300)**2 + (finalY-300)**2);
-            let p = 0;
-            if(d < 15) p = 50; else if(d < 35) p = 25; else if(d < 285) p = Math.floor(Math.random()*20)+1;
             
-            score += p; darts--;
+            let p = 0;
+            if(d < 15) p = 50; 
+            else if(d < 35) p = 25; 
+            else if(d < 285) {
+                // 다트판 구역별 점수 로직 (기존 폼 유지)
+                const sectorScores = [6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10];
+                const angle = Math.atan2(finalY-300, finalX-300) - rot;
+                const sectorSize = (Math.PI * 2) / 20;
+                let idx = Math.floor((angle + Math.PI + (sectorSize / 2)) / sectorSize) % 20;
+                p = sectorScores[idx];
+            }
+            
+            score += p; 
+            darts--;
+
+            // UI 업데이트 (이번 점수 & 누적 점수)
+            document.getElementById('last-hit').innerText = p;
             document.getElementById('total').innerText = score + " PT";
             document.getElementById('darts').innerText = darts;
-            if(darts <= 0) { over = true; document.getElementById('over-ui').style.display='block'; }
+
+            if(darts <= 0) { 
+                over = true; 
+                document.getElementById('over-ui').style.display='block'; 
+                document.getElementById('fake-cursor').style.display='none';
+            }
         };
 
         function windTick() {
@@ -124,7 +159,21 @@
             db.ref('rankingPro').push({name:n, score:score}).then(() => location.reload());
         }
 
-        // 랭킹 불러오기 (멈춤 현상 해결)
+        // 초기화 기능 (관리자 코드 입력)
+        function resetRanking() {
+            const code = prompt("관리자 코드를 입력하세요.");
+            if(code === "7777") { // 비밀번호 설정
+                if(confirm("모든 랭킹 기록을 삭제하시겠습니까?")) {
+                    db.ref('rankingPro').remove().then(() => {
+                        alert("기록이 초기화되었습니다.");
+                        location.reload();
+                    });
+                }
+            } else {
+                alert("코드가 일치하지 않습니다.");
+            }
+        }
+
         db.ref('rankingPro').on('value', (snap) => {
             const list = document.getElementById('rankList');
             list.innerHTML = '';
@@ -132,7 +181,7 @@
             snap.forEach(c => { items.push(c.val()); });
             items.sort((a,b) => b.score - a.score);
             items.slice(0,10).forEach((v, i) => {
-                list.innerHTML += `<li><span>#${i+1} ${v.name}</span><span>${v.score} PT</span></li>`;
+                list.innerHTML += `<li><span><b>#${i+1}</b> ${v.name}</span><span>${v.score.toLocaleString()} PT</span></li>`;
             });
             if(items.length === 0) list.innerHTML = "<li>등록된 전설이 없습니다.</li>";
         });

@@ -165,7 +165,7 @@
 
         /* --- 슬롯머신 로직 (보상 수치 수정) --- */
         const slotItems = ['♠','◆','♥','♣','●','■']; 
-        const weightedPool = ['♠','♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','●','●','●','●','●','●','●','■','■','■','■','■','■','■','■','■','■'];
+        const weightedPool = ['♠','♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','●','●','●','●','■','■','■','■','■','■','■'];
 
         function initReels() {
             for(let i=1; i<=4; i++) {
@@ -255,7 +255,7 @@
         }
 
         function adminReset(type) {
-            if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove();
+            if(prompt("관계자 외 사용 금지.") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove();
         }
 
         db.ref('rankingPro').on('value', (snap) => {

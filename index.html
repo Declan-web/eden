@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - ACCESS GRANTED</title>
+    <title>CASINO EDEN - ACCESS RESTRICTED</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -11,26 +11,44 @@
             --glass-bg: rgba(15, 15, 15, 0.9);
         }
 
+        /* 보안 레이어 - 폐쇄용 */
+        #gatekeeper {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: black; z-index: 99999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: auto;
+        }
+        #gatekeeper h2 {
+            color: var(--dark-red); font-family: 'Gungsuh', serif; 
+            letter-spacing: 5px; margin-bottom: 30px; font-size: 2em;
+        }
+        #gatekeeper input {
+            width: 300px; padding: 15px; background: #111; border: 1px solid #333;
+            color: white; text-align: center; font-size: 1.2em; border-radius: 5px;
+            margin-bottom: 20px; outline: none;
+        }
+        #gatekeeper button {
+            width: 300px; padding: 15px; background: var(--dark-red); color: white;
+            border: none; font-weight: bold; cursor: pointer; border-radius: 5px;
+            transition: 0.3s;
+        }
+        #gatekeeper button:hover { background: var(--neon-red); }
+
         body { 
             margin: 0; background-color: var(--deep-black); color: white; 
             font-family: 'Pretendard', sans-serif; 
             display: flex; flex-direction: column; align-items: center; 
-            /* 스크롤 활성화 */
-            overflow-y: auto; overflow-x: hidden; 
-            width: 100vw; min-height: 100vh; position: relative;
-            /* 터치/클릭 가능하도록 수정 */
-            cursor: auto; 
+            overflow: hidden; width: 100vw; height: 100vh; position: relative;
         }
         
         #moving-dart {
             position: fixed; width: 420px; height: 420px;
-            z-index: 10; pointer-events: none; 
+            z-index: 9999; pointer-events: none; 
             display: none; top: 0; left: 0;
             filter: drop-shadow(0 0 30px rgba(0,0,0,1));
             will-change: transform;
         }
 
-        /* 커스텀 커서가 클릭을 방해하지 않도록 설정 */
         #custom-cursor {
             position: fixed; width: 40px; height: 40px;
             border: 2px solid var(--neon-red); border-radius: 50%;
@@ -45,15 +63,15 @@
 
         .hit-mark { position: fixed; width: 10px; height: 10px; background: var(--neon-red); border: 1px solid white; border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%, -50%); }
 
-        /* UI 레이어 터치 차단 해제 */
-        #ui-layer { position: relative; z-index: 100; display: flex; flex-direction: column; align-items: center; width: 100%; padding-bottom: 50px; }
+        #ui-layer { position: relative; z-index: 100; display: flex; flex-direction: column; align-items: center; width: 100%; pointer-events: none; }
+        #ui-layer * { pointer-events: auto; }
 
         #tab-menu { display: flex; gap: 15px; margin-top: 30px; }
         .tab-btn { padding: 12px 35px; background: #1a1a1a; border: 1px solid #333; color: #666; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: var(--dark-red); color: #fff; border-color: var(--neon-red); box-shadow: 0 0 15px var(--dark-red); }
 
-        h1 { color: var(--dark-red); font-size: 4em; margin-top: 25px; margin-bottom: 5px; font-family: 'Gungsuh', serif; letter-spacing: 8px; }
-        .description { color: #444; margin-bottom: 30px; font-size: 1.1em; font-weight: bold; letter-spacing: 2px; }
+        h1 { color: var(--dark-red); font-size: 4em; margin-top: 25px; margin-bottom: 5px; font-family: 'Gungsuh', serif; letter-spacing: 8px; pointer-events: none; }
+        .description { color: #444; margin-bottom: 30px; font-size: 1.1em; font-weight: bold; letter-spacing: 2px; pointer-events: none; }
 
         .game-section { display: none; flex-direction: column; align-items: center; width: 100%; }
         .game-section.active { display: flex; }
@@ -87,6 +105,12 @@
 </head>
 <body onmousedown="handleGlobalClick(event)">
 
+    <div id="gatekeeper">
+        <h2>UNDER MAINTENANCE</h2>
+        <input type="password" id="access-pass" placeholder="ENTER ACCESS KEY" onkeydown="if(event.key==='Enter') verifyAccess()">
+        <button onclick="verifyAccess()">RESTORE ACCESS</button>
+    </div>
+
     <div id="custom-cursor"></div>
     <img src="image_6.png" id="moving-dart">
 
@@ -100,7 +124,7 @@
 
         <div id="dart-section" class="game-section">
             <div class="description">불멸의 기록을 위한 극한의 저격</div>
-            <div style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; justify-content: center;">
+            <div style="display: flex; gap: 40px; align-items: flex-start;">
                 <div id="hud">
                     <div class="stat-box"><div class="label">Darts</div><div id="darts-val" class="val">10</div></div>
                     <div class="stat-box"><div class="label">Score</div><div id="total-score" class="val">0</div></div>
@@ -159,8 +183,19 @@
     let posX = Math.random() * (window.innerWidth - dSize), posY = Math.random() * (window.innerHeight - dSize);
     let baseVx = (Math.random() * 4 + 20) * (Math.random() > 0.5 ? 1 : -1);
     let baseVy = (Math.random() * 4 + 20) * (Math.random() > 0.5 ? 1 : -1);
-    let rot = 0, score = 0, darts = 10, over = false, currentWinC = 0;
+    let rot = 0, score = 0, darts = 10, over = false, currentWinC = 0, accessed = false;
     let mx = 0, my = 0, sx = 0, sy = 0, waveTime = 0;
+
+    // 인증 함수
+    function verifyAccess() {
+        if(document.getElementById('access-pass').value === "483010") {
+            accessed = true;
+            document.getElementById('gatekeeper').style.display = 'none';
+            document.body.style.overflow = 'hidden';
+            initDataListeners();
+            switchTab(localStorage.getItem('activeGameTab') || 'dart');
+        } else { alert("INVALID ACCESS KEY"); }
+    }
 
     function initDataListeners() {
         db.ref('rankingPro').on('value', (snap) => {
@@ -181,14 +216,16 @@
 
     window.onmousemove = (e) => { mx = e.clientX; my = e.clientY; };
     function updateCursor() {
-        sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
-        sx *= 0.9; sy *= 0.9;
-        cursor.style.left = (mx + sx) + 'px'; cursor.style.top = (my + sy) + 'px';
+        if(accessed) {
+            sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
+            sx *= 0.9; sy *= 0.9;
+            cursor.style.left = (mx + sx) + 'px'; cursor.style.top = (my + sy) + 'px';
+        }
         requestAnimationFrame(updateCursor);
     }
 
     function moveDart() {
-        if (!over && document.getElementById('dart-section').classList.contains('active')) {
+        if (!over && accessed && document.getElementById('dart-section').classList.contains('active')) {
             waveTime += 0.02;
             const speedMultiplier = 1.25 + Math.sin(waveTime) * 0.75;
             posX += baseVx * speedMultiplier; posY += baseVy * speedMultiplier; rot += 20 * speedMultiplier;
@@ -200,29 +237,23 @@
     }
 
     function handleGlobalClick(e) {
-        if (!document.getElementById('dart-section').classList.contains('active') || over || darts <= 0) return;
-        
-        // 클릭한 대상이 입력창(input)이나 버튼(button), 탭 메뉴라면 다트 점수 처리를 무시함
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('.tab-btn')) return;
-
+        if (!accessed || !document.getElementById('dart-section').classList.contains('active') || over || darts <= 0) return;
+        if (e.target.closest('#ui-layer')) return;
         const tx = mx + sx, ty = my + sy;
         const rect = dartImg.getBoundingClientRect();
         const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
         const dist = Math.sqrt((tx - cx)**2 + (ty - cy)**2);
-        
         const m = document.createElement('div'); m.className = 'hit-mark'; m.style.left = tx + 'px'; m.style.top = ty + 'px';
         document.body.appendChild(m); setTimeout(() => m.remove(), 1000);
-        
         let p = (dist < 20) ? 50 : (dist < 60) ? 25 : (dist < 180) ? Math.floor(Math.random() * 15) + 1 : 0;
         score += p; darts--;
         document.getElementById('hit-val').innerText = p; document.getElementById('total-score').innerText = score;
         document.getElementById('darts-val').innerText = darts;
         baseVx *= 1.01; baseVy *= 1.01;
-        
         if (darts <= 0) {
             over = true; dartImg.style.display = 'none';
             document.getElementById('over-ui').style.display = 'block';
-            cursor.style.display = 'none';
+            document.body.style.cursor = 'auto'; cursor.style.display = 'none';
         }
     }
 
@@ -267,7 +298,7 @@
                     document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`; 
                     document.getElementById('slot-over-ui').style.display = 'block';
                 } else {
-                    document.getElementById('slot-msg').innerText = "JACKPOT? NO, IT'S 0 CHIP."; 
+                    document.getElementById('slot-msg').innerText = "BOOM! 0 CHIP."; 
                 }
             } else { 
                 currentWinC = 0;
@@ -297,25 +328,22 @@
     }
 
     function switchTab(game) {
+        if(!accessed) return;
         localStorage.setItem('activeGameTab', game); 
         document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(game + '-section').classList.add('active');
         document.getElementById('btn-' + game).classList.add('active');
-        
         const isD = (game === 'dart' && !over);
         dartImg.style.display = isD ? 'block' : 'none';
         cursor.style.display = isD ? 'block' : 'none';
-        // 다트 게임 중에도 입력을 위해 body 커서는 보이도록 유지하거나 상황에 맞게 조절
-        document.body.style.cursor = "auto";
+        document.body.style.cursor = isD ? 'none' : 'auto';
     }
 
-    function adminReset(type) { if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
+    function adminReset(type) { if(prompt("PASS?") === "483010") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
     
     window.onload = () => { 
         initReels(); 
-        initDataListeners();
-        switchTab(localStorage.getItem('activeGameTab') || 'dart');
         moveDart(); 
         updateCursor(); 
     };

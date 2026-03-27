@@ -2,29 +2,13 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - REPAIR COMPLETE</title>
+    <title>CASINO EDEN - OPEN ACCESS</title>
     <style>
         :root {
             --dark-red: #7a0000;
             --neon-red: #ff1a1a;
             --deep-black: #0d0d0d;
             --glass-bg: rgba(15, 15, 15, 0.9);
-        }
-
-        /* 보안 레이어 */
-        #gatekeeper {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: black; z-index: 99999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        #gatekeeper input {
-            width: 300px; padding: 15px; background: #111; border: 1px solid #333;
-            color: white; text-align: center; font-size: 1.2em; border-radius: 5px;
-            margin-bottom: 20px; outline: none;
-        }
-        #gatekeeper button {
-            width: 300px; padding: 15px; background: var(--dark-red); color: white;
-            border: none; font-weight: bold; cursor: pointer; border-radius: 5px;
         }
 
         body { 
@@ -99,12 +83,6 @@
 </head>
 <body onmousedown="handleGlobalClick(event)">
 
-    <div id="gatekeeper">
-        <h2 style="color:var(--dark-red); font-family:'Gungsuh'; letter-spacing:5px; margin-bottom:30px;">IDENTITY VERIFICATION</h2>
-        <input type="password" id="access-pass" placeholder="ENTER ACCESS KEY" onkeydown="if(event.key==='Enter') verifyAccess()">
-        <button onclick="verifyAccess()">ACCESS AREA</button>
-    </div>
-
     <div id="custom-cursor"></div>
     <img src="image_6.png" id="moving-dart">
 
@@ -177,18 +155,10 @@
     let posX = Math.random() * (window.innerWidth - dSize), posY = Math.random() * (window.innerHeight - dSize);
     let baseVx = (Math.random() * 4 + 20) * (Math.random() > 0.5 ? 1 : -1);
     let baseVy = (Math.random() * 4 + 20) * (Math.random() > 0.5 ? 1 : -1);
-    let rot = 0, score = 0, darts = 10, over = false, currentWinC = 0, accessed = false;
+    let rot = 0, score = 0, darts = 10, over = false, currentWinC = 0;
     let mx = 0, my = 0, sx = 0, sy = 0, waveTime = 0;
 
-    function verifyAccess() {
-        if(document.getElementById('access-pass').value === "1119") {
-            accessed = true;
-            document.getElementById('gatekeeper').style.display = 'none';
-            initDataListeners();
-            switchTab(localStorage.getItem('activeGameTab') || 'dart');
-        } else { alert("ACCESS DENIED"); }
-    }
-
+    // 데이터 리스너 상시 활성화
     function initDataListeners() {
         db.ref('rankingPro').on('value', (snap) => {
             const list = document.getElementById('rankList'); list.innerHTML = '';
@@ -200,7 +170,6 @@
         db.ref('slotRanking_v3').on('value', (snap) => {
             const list = document.getElementById('slotRankList'); list.innerHTML = '';
             let arr = []; snap.forEach(c => { let d = c.val(); if(d.name) arr.push(d); });
-            // 슬롯 랭킹은 최신순으로 정렬 (필요시 점수순 b.score - a.score로 변경 가능)
             arr.reverse().slice(0,10).forEach(v => {
                 list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
             });
@@ -209,16 +178,14 @@
 
     window.onmousemove = (e) => { mx = e.clientX; my = e.clientY; };
     function updateCursor() {
-        if(accessed) {
-            sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
-            sx *= 0.9; sy *= 0.9;
-            cursor.style.left = (mx + sx) + 'px'; cursor.style.top = (my + sy) + 'px';
-        }
+        sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
+        sx *= 0.9; sy *= 0.9;
+        cursor.style.left = (mx + sx) + 'px'; cursor.style.top = (my + sy) + 'px';
         requestAnimationFrame(updateCursor);
     }
 
     function moveDart() {
-        if (!over && accessed && document.getElementById('dart-section').classList.contains('active')) {
+        if (!over && document.getElementById('dart-section').classList.contains('active')) {
             waveTime += 0.02;
             const speedMultiplier = 1.25 + Math.sin(waveTime) * 0.75;
             posX += baseVx * speedMultiplier; posY += baseVy * speedMultiplier; rot += 20 * speedMultiplier;
@@ -230,7 +197,7 @@
     }
 
     function handleGlobalClick(e) {
-        if (!accessed || !document.getElementById('dart-section').classList.contains('active') || over || darts <= 0) return;
+        if (!document.getElementById('dart-section').classList.contains('active') || over || darts <= 0) return;
         if (e.target.closest('#ui-layer')) return;
         const tx = mx + sx, ty = my + sy;
         const rect = dartImg.getBoundingClientRect();
@@ -250,9 +217,8 @@
         }
     }
 
-    /* 슬롯머신 로직 (연동 문제 해결) */
-    const slotItems = ['♠','◆','♥','♣','●','■']; 
-    const weightedPool = ['♠','♠', '♠','♠', '♠','♠', '♠','♠', '♠','♠', '♠','♠', '♠','♠'];
+    const slotItems = ['♠','◆','♥', '♣','●','■']; 
+    const weightedPool = ['♠', '◆', '◆', '♥', '♥', '♥', '♣', '♣', '♣', '♣', '●','■', '●','■', '●','■', '●','■'];
 
     function initReels() {
         document.querySelectorAll('.slot-reel').forEach(r => {
@@ -287,7 +253,7 @@
             if(res.every(v => v === res[0])) {
                 const s = res[0];
                 let w = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:200;
-                currentWinC = w; // 전역 변수에 정확히 할당
+                currentWinC = w; 
                 document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`; 
                 document.getElementById('slot-over-ui').style.display = 'block';
             } else { 
@@ -307,27 +273,17 @@
         const inputId = type === 'dart' ? 'nick-dart' : 'slot-nick';
         const nameVal = document.getElementById(inputId).value.trim();
         if(!nameVal) return alert("NICKNAME PLEASE");
-        
-        // 타입별 최종 점수 확정
         const finalVal = type === 'dart' ? score : currentWinC;
         const targetPath = type === 'dart' ? 'rankingPro' : 'slotRanking_v3';
-        
         db.ref(targetPath).push().set({
-            name: nameVal,
-            score: Number(finalVal),
-            date: firebase.database.ServerValue.TIMESTAMP
+            name: nameVal, score: Number(finalVal), date: firebase.database.ServerValue.TIMESTAMP
         }, (err) => { 
-            if(!err) { 
-                alert("LEGACY RECORDED!"); 
-                location.reload(); 
-            } else {
-                alert("DATABASE ERROR: " + err.message);
-            }
+            if(!err) { alert("LEGACY RECORDED!"); location.reload(); }
+            else { alert("DATABASE ERROR: " + err.message); }
         });
     }
 
     function switchTab(game) {
-        if(!accessed) return;
         localStorage.setItem('activeGameTab', game); 
         document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -340,7 +296,15 @@
     }
 
     function adminReset(type) { if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
-    window.onload = () => { initReels(); moveDart(); updateCursor(); };
+    
+    // 초기화 함수: 보안 레이어 없이 바로 실행
+    window.onload = () => { 
+        initReels(); 
+        initDataListeners();
+        switchTab(localStorage.getItem('activeGameTab') || 'dart');
+        moveDart(); 
+        updateCursor(); 
+    };
 </script>
 </body>
 </html>

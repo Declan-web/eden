@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - PROBABILITY CONTROL</title>
+    <title>CASINO EDEN - REPAIR COMPLETE</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -199,7 +199,8 @@
         });
         db.ref('slotRanking_v3').on('value', (snap) => {
             const list = document.getElementById('slotRankList'); list.innerHTML = '';
-            let arr = []; snap.forEach(c => arr.push(c.val()));
+            let arr = []; snap.forEach(c => { let d = c.val(); if(d.name) arr.push(d); });
+            // 슬롯 랭킹은 최신순으로 정렬 (필요시 점수순 b.score - a.score로 변경 가능)
             arr.reverse().slice(0,10).forEach(v => {
                 list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
             });
@@ -249,10 +250,9 @@
         }
     }
 
-    /* --- 슬롯머신 로직 (확률 제어 시스템) --- */
+    /* 슬롯머신 로직 (연동 문제 해결) */
     const slotItems = ['♠','◆','♥','♣','●','■']; 
-    // 특정 기호의 개수를 늘리면 당첨 확률이 변합니다.
-    const weightedPool = ['♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠','♠'];
+    const weightedPool = ['♠','♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','■','■','■'];
 
     function initReels() {
         document.querySelectorAll('.slot-reel').forEach(r => {
@@ -273,7 +273,6 @@
         const res = [];
         for(let i=1; i<=4; i++) {
             const reel = document.getElementById('reel'+i);
-            // 가중치 풀에서 무작위 선택
             const final = weightedPool[Math.floor(Math.random()*weightedPool.length)];
             res.push(final);
             reel.lastElementChild.innerText = final;
@@ -288,10 +287,13 @@
             if(res.every(v => v === res[0])) {
                 const s = res[0];
                 let w = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:200;
-                currentWinC = w; 
+                currentWinC = w; // 전역 변수에 정확히 할당
                 document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`; 
                 document.getElementById('slot-over-ui').style.display = 'block';
-            } else { document.getElementById('slot-msg').innerText = "FAILED."; }
+            } else { 
+                currentWinC = 0;
+                document.getElementById('slot-msg').innerText = "FAILED."; 
+            }
             res.forEach((v, i) => {
                 const r = document.getElementById('reel'+(i+1));
                 r.style.transition = "none"; r.style.top = "0px";
@@ -305,11 +307,23 @@
         const inputId = type === 'dart' ? 'nick-dart' : 'slot-nick';
         const nameVal = document.getElementById(inputId).value.trim();
         if(!nameVal) return alert("NICKNAME PLEASE");
-        const finalScore = type === 'dart' ? score : currentWinC;
+        
+        // 타입별 최종 점수 확정
+        const finalVal = type === 'dart' ? score : currentWinC;
         const targetPath = type === 'dart' ? 'rankingPro' : 'slotRanking_v3';
+        
         db.ref(targetPath).push().set({
-            name: nameVal, score: Number(finalScore), date: firebase.database.ServerValue.TIMESTAMP
-        }, (err) => { if(!err) { alert("LEGACY RECORDED!"); location.reload(); } });
+            name: nameVal,
+            score: Number(finalVal),
+            date: firebase.database.ServerValue.TIMESTAMP
+        }, (err) => { 
+            if(!err) { 
+                alert("LEGACY RECORDED!"); 
+                location.reload(); 
+            } else {
+                alert("DATABASE ERROR: " + err.message);
+            }
+        });
     }
 
     function switchTab(game) {

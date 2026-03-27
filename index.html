@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - SYSTEM RECOVERED</title>
+    <title>CASINO EDEN - VELOCITY WAVE</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -76,6 +76,15 @@
         .val { font-size: 2.2em; font-weight: bold; }
         #total-score { color: var(--neon-red); }
 
+        #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
+        .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
+        .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
+        .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; }
+        .slot-item { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 4.5em; flex-shrink: 0; }
+        .diamond-item { font-size: 3.5em !important; }
+
+        #slot-msg { height: 40px; color: var(--dark-red); margin-bottom: 10px; font-weight: bold; font-size: 1.2em; }
+        
         .leaderboard { width: 850px; margin-top: 30px; background: var(--glass-bg); padding: 30px; border-radius: 15px; border: 1px solid #222; }
         .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
         .board-header h2 { margin: 0; color: var(--dark-red); font-size: 1.6em; }
@@ -131,8 +140,15 @@
 
         <div id="slot-section" class="game-section">
             <div class="description">운명이 결정되는 단 한 번의 찬스</div>
-            <div id="slot-machine" style="width:700px; background:#151515; padding:50px; border-radius:20px; border:8px solid #2a2a2a; text-align:center;">
-                <div id="slot-msg" style="height:40px; color:var(--dark-red); margin-bottom:10px; font-weight:bold;">CHALLENGE YOUR LUCK</div>
+            <div id="slot-machine">
+                <div id="slot-msg">CHALLENGE YOUR LUCK</div>
+                <div class="slot-container">
+                    <div class="slot-window"><div id="reel1" class="slot-reel"></div></div>
+                    <div class="slot-window"><div id="reel2" class="slot-reel"></div></div>
+                    <div class="slot-window"><div id="reel3" class="slot-reel"></div></div>
+                    <div class="slot-window"><div id="reel4" class="slot-reel"></div></div>
+                </div>
+                <button id="spin-btn" onclick="spinSlot()">SPIN</button>
                 <div id="slot-over-ui" style="display:none; margin-top:20px;">
                     <input type="text" id="slot-nick" placeholder="NICKNAME">
                     <button onclick="saveResult('slot')">RECORD LEGACY</button>
@@ -159,43 +175,36 @@
     const cursor = document.getElementById('custom-cursor');
     const dSize = 420; 
     let posX = Math.random() * (window.innerWidth - dSize), posY = Math.random() * (window.innerHeight - dSize);
-    let vx = (Math.random() * 4 + 28) * (Math.random() > 0.5 ? 1 : -1);
-    let vy = (Math.random() * 4 + 28) * (Math.random() > 0.5 ? 1 : -1);
-    let rot = 0, score = 0, darts = 10, over = false, accessed = false;
+    
+    // 기본 물리 변수
+    let baseVx = (Math.random() * 4 + 20) * (Math.random() > 0.5 ? 1 : -1);
+    let baseVy = (Math.random() * 4 + 20) * (Math.random() > 0.5 ? 1 : -1);
+    let rot = 0, score = 0, darts = 10, over = false, currentWinC = 0, accessed = false;
     let mx = 0, my = 0, sx = 0, sy = 0;
+    
+    // 속도 파동(Wave) 변수
+    let waveTime = 0;
 
-    // 인증 및 데이터 로드 시작
     function verifyAccess() {
         if(document.getElementById('access-pass').value === "1119") {
             accessed = true;
             document.getElementById('gatekeeper').style.display = 'none';
-            // 인증 후 데이터 리스너 활성화
             initDataListeners();
             switchTab(localStorage.getItem('activeGameTab') || 'dart');
         } else { alert("ACCESS DENIED"); }
     }
 
     function initDataListeners() {
-        // 다트 랭킹 연동
         db.ref('rankingPro').on('value', (snap) => {
-            const list = document.getElementById('rankList');
-            list.innerHTML = '';
-            let arr = [];
-            snap.forEach(c => {
-                let data = c.val();
-                if(data.name && data.score !== undefined) arr.push(data);
-            });
+            const list = document.getElementById('rankList'); list.innerHTML = '';
+            let arr = []; snap.forEach(c => { let d = c.val(); if(d.name) arr.push(d); });
             arr.sort((a,b) => b.score - a.score).slice(0, 10).forEach((v, i) => {
                 list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
             });
         });
-
-        // 슬롯 랭킹 연동
         db.ref('slotRanking_v3').on('value', (snap) => {
-            const list = document.getElementById('slotRankList');
-            list.innerHTML = '';
-            let arr = [];
-            snap.forEach(c => arr.push(c.val()));
+            const list = document.getElementById('slotRankList'); list.innerHTML = '';
+            let arr = []; snap.forEach(c => arr.push(c.val()));
             arr.reverse().slice(0,10).forEach(v => {
                 list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
             });
@@ -208,23 +217,27 @@
         if(accessed) {
             sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
             sx *= 0.9; sy *= 0.9;
-            cursor.style.left = (mx + sx) + 'px'; 
-            cursor.style.top = (my + sy) + 'px';
+            cursor.style.left = (mx + sx) + 'px'; cursor.style.top = (my + sy) + 'px';
         }
         requestAnimationFrame(updateCursor);
     }
 
     function moveDart() {
         if (!over && accessed && document.getElementById('dart-section').classList.contains('active')) {
-            posX += vx; posY += vy; rot += 35;
-            if (posX <= 0 || posX >= window.innerWidth - dSize) {
-                posX = posX <= 0 ? 0 : window.innerWidth - dSize;
-                vx *= -1.01;
-            }
-            if (posY <= 0 || posY >= window.innerHeight - dSize) {
-                posY = posY <= 0 ? 0 : window.innerHeight - dSize;
-                vy *= -1.01;
-            }
+            // 사이클에 따른 속도 변동 (Math.sin 활용)
+            waveTime += 0.02;
+            const speedMultiplier = 1.25 + Math.sin(waveTime) * 0.75; // 0.5배 ~ 2.0배 사이를 왕복
+            
+            posX += baseVx * speedMultiplier; 
+            posY += baseVy * speedMultiplier; 
+            rot += 20 * speedMultiplier;
+
+            // 벽 충돌 및 위치 보정
+            if (posX <= 0) { posX = 0; baseVx *= -1; }
+            if (posX >= window.innerWidth - dSize) { posX = window.innerWidth - dSize; baseVx *= -1; }
+            if (posY <= 0) { posY = 0; baseVy *= -1; }
+            if (posY >= window.innerHeight - dSize) { posY = window.innerHeight - dSize; baseVy *= -1; }
+
             dartImg.style.transform = `translate(${posX}px, ${posY}px) rotate(${rot}deg)`;
         }
         requestAnimationFrame(moveDart);
@@ -239,17 +252,16 @@
         const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
         const dist = Math.sqrt((tx - cx)**2 + (ty - cy)**2);
 
-        const m = document.createElement('div'); 
-        m.className = 'hit-mark'; m.style.left = tx + 'px'; m.style.top = ty + 'px';
-        document.body.appendChild(m);
-        setTimeout(() => m.remove(), 1000);
+        const m = document.createElement('div'); m.className = 'hit-mark'; m.style.left = tx + 'px'; m.style.top = ty + 'px';
+        document.body.appendChild(m); setTimeout(() => m.remove(), 1000);
 
         let p = (dist < 20) ? 50 : (dist < 60) ? 25 : (dist < 180) ? Math.floor(Math.random() * 15) + 1 : 0;
         score += p; darts--;
-        
-        document.getElementById('hit-val').innerText = p;
-        document.getElementById('total-score').innerText = score;
+        document.getElementById('hit-val').innerText = p; document.getElementById('total-score').innerText = score;
         document.getElementById('darts-val').innerText = darts;
+
+        // 적중 시 기본 속도 미세 가속 (여전히 전체적인 파동은 유지됨)
+        baseVx *= 1.01; baseVy *= 1.01;
 
         if (darts <= 0) {
             over = true; dartImg.style.display = 'none';
@@ -258,27 +270,62 @@
         }
     }
 
+    const slotItems = ['♠','◆','♥','♣','●','■']; 
+    function initReels() {
+        document.querySelectorAll('.slot-reel').forEach(r => {
+            r.innerHTML = '';
+            for(let j=0; j<40; j++) {
+                const sym = slotItems[Math.floor(Math.random()*slotItems.length)];
+                const d = document.createElement('div');
+                d.className = 'slot-item' + (sym === '◆' ? ' diamond-item' : '');
+                d.innerText = sym; r.appendChild(d);
+            }
+        });
+    }
+
+    function spinSlot() {
+        document.getElementById('slot-over-ui').style.display = 'none';
+        document.getElementById('slot-msg').innerText = "ROLLING...";
+        const btn = document.getElementById('spin-btn'); btn.disabled = true;
+        const res = [];
+        for(let i=1; i<=4; i++) {
+            const reel = document.getElementById('reel'+i);
+            const final = slotItems[Math.floor(Math.random()*slotItems.length)];
+            res.push(final);
+            reel.lastElementChild.innerText = final;
+            reel.lastElementChild.className = 'slot-item' + (final === '◆' ? ' diamond-item' : '');
+            reel.style.transition = "none"; reel.style.top = "0px";
+            void reel.offsetWidth; 
+            reel.style.transition = `top ${2 + (i-1)*0.5}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+            reel.style.top = "-6240px";
+        }
+        setTimeout(() => {
+            btn.disabled = false;
+            if(res.every(v => v === res[0])) {
+                const s = res[0];
+                let w = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:200;
+                currentWinC = w; 
+                document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`; 
+                document.getElementById('slot-over-ui').style.display = 'block';
+            } else { document.getElementById('slot-msg').innerText = "FAILED."; }
+            res.forEach((v, i) => {
+                const r = document.getElementById('reel'+(i+1));
+                r.style.transition = "none"; r.style.top = "0px";
+                r.firstElementChild.innerText = v;
+                r.firstElementChild.className = 'slot-item' + (v === '◆' ? ' diamond-item' : '');
+            });
+        }, 4000);
+    }
+
     function saveResult(type) {
         const inputId = type === 'dart' ? 'nick-dart' : 'slot-nick';
         const nameVal = document.getElementById(inputId).value.trim();
         if(!nameVal) return alert("NICKNAME PLEASE");
-        
-        const finalScore = type === 'dart' ? score : (window.currentWinC || 0);
+        const finalScore = type === 'dart' ? score : currentWinC;
         const targetPath = type === 'dart' ? 'rankingPro' : 'slotRanking_v3';
-        
-        // 데이터 전송 구조 강화
         db.ref(targetPath).push().set({
-            name: nameVal,
-            score: Number(finalScore),
-            date: firebase.database.ServerValue.TIMESTAMP
-        }, (err) => {
-            if(!err) {
-                alert("LEGACY RECORDED!");
-                location.reload(); 
-            } else {
-                alert("DB ERROR: " + err.message);
-            }
-        });
+            name: nameVal, score: Number(finalScore), date: firebase.database.ServerValue.TIMESTAMP
+        }, (err) => { if(!err) { alert("LEGACY RECORDED!"); location.reload(); } });
     }
 
     function switchTab(game) {
@@ -295,8 +342,7 @@
     }
 
     function adminReset(type) { if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
-
-    window.onload = () => { moveDart(); updateCursor(); };
+    window.onload = () => { initReels(); moveDart(); updateCursor(); };
 </script>
 </body>
 </html>

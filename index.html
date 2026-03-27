@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - OPEN ACCESS</title>
+    <title>CASINO EDEN - NEW RULES</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -158,7 +158,6 @@
     let rot = 0, score = 0, darts = 10, over = false, currentWinC = 0;
     let mx = 0, my = 0, sx = 0, sy = 0, waveTime = 0;
 
-    // 데이터 리스너 상시 활성화
     function initDataListeners() {
         db.ref('rankingPro').on('value', (snap) => {
             const list = document.getElementById('rankList'); list.innerHTML = '';
@@ -217,8 +216,8 @@
         }
     }
 
-    const slotItems = ['♠','◆','♥', '♣','●','■']; 
-    const weightedPool = ['♠', '◆', '◆', '♥', '♥', '♥', '♣', '♣', '♣', '♣', '●','■', '●','■', '●','■', '●','■'];
+    const slotItems = ['♠','◆','♥','♣','●','■']; 
+    const weightedPool = ['♠','◆','♥','♣','●','■','♠','◆','♥','♣','●','■'];
 
     function initReels() {
         document.querySelectorAll('.slot-reel').forEach(r => {
@@ -252,10 +251,20 @@
             btn.disabled = false;
             if(res.every(v => v === res[0])) {
                 const s = res[0];
-                let w = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:200;
+                let w = 0;
+                if (s === '♠') w = 500;
+                else if (s === '◆') w = 400;
+                else if (s === '♥') w = 300;
+                else if (s === '♣') w = 200;
+                else w = 0; // ●, ■ 꽝
+
                 currentWinC = w; 
-                document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`; 
-                document.getElementById('slot-over-ui').style.display = 'block';
+                if(w > 0) {
+                    document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`; 
+                    document.getElementById('slot-over-ui').style.display = 'block';
+                } else {
+                    document.getElementById('slot-msg').innerText = "JACKPOT? NO, IT'S 0 CHIP."; 
+                }
             } else { 
                 currentWinC = 0;
                 document.getElementById('slot-msg').innerText = "FAILED."; 
@@ -297,7 +306,6 @@
 
     function adminReset(type) { if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }
     
-    // 초기화 함수: 보안 레이어 없이 바로 실행
     window.onload = () => { 
         initReels(); 
         initDataListeners();

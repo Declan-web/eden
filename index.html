@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - NEW RULES</title>
+    <title>CASINO EDEN - ACCESS GRANTED</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -15,18 +15,22 @@
             margin: 0; background-color: var(--deep-black); color: white; 
             font-family: 'Pretendard', sans-serif; 
             display: flex; flex-direction: column; align-items: center; 
-            overflow: hidden; width: 100vw; height: 100vh; position: relative;
-            cursor: none; 
+            /* 스크롤 활성화 */
+            overflow-y: auto; overflow-x: hidden; 
+            width: 100vw; min-height: 100vh; position: relative;
+            /* 터치/클릭 가능하도록 수정 */
+            cursor: auto; 
         }
         
         #moving-dart {
             position: fixed; width: 420px; height: 420px;
-            z-index: 9999; pointer-events: none; 
+            z-index: 10; pointer-events: none; 
             display: none; top: 0; left: 0;
             filter: drop-shadow(0 0 30px rgba(0,0,0,1));
             will-change: transform;
         }
 
+        /* 커스텀 커서가 클릭을 방해하지 않도록 설정 */
         #custom-cursor {
             position: fixed; width: 40px; height: 40px;
             border: 2px solid var(--neon-red); border-radius: 50%;
@@ -41,15 +45,15 @@
 
         .hit-mark { position: fixed; width: 10px; height: 10px; background: var(--neon-red); border: 1px solid white; border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%, -50%); }
 
-        #ui-layer { position: relative; z-index: 100; display: flex; flex-direction: column; align-items: center; width: 100%; pointer-events: none; }
-        #ui-layer * { pointer-events: auto; }
+        /* UI 레이어 터치 차단 해제 */
+        #ui-layer { position: relative; z-index: 100; display: flex; flex-direction: column; align-items: center; width: 100%; padding-bottom: 50px; }
 
         #tab-menu { display: flex; gap: 15px; margin-top: 30px; }
         .tab-btn { padding: 12px 35px; background: #1a1a1a; border: 1px solid #333; color: #666; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: var(--dark-red); color: #fff; border-color: var(--neon-red); box-shadow: 0 0 15px var(--dark-red); }
 
-        h1 { color: var(--dark-red); font-size: 4em; margin-top: 25px; margin-bottom: 5px; font-family: 'Gungsuh', serif; letter-spacing: 8px; pointer-events: none; }
-        .description { color: #444; margin-bottom: 30px; font-size: 1.1em; font-weight: bold; letter-spacing: 2px; pointer-events: none; }
+        h1 { color: var(--dark-red); font-size: 4em; margin-top: 25px; margin-bottom: 5px; font-family: 'Gungsuh', serif; letter-spacing: 8px; }
+        .description { color: #444; margin-bottom: 30px; font-size: 1.1em; font-weight: bold; letter-spacing: 2px; }
 
         .game-section { display: none; flex-direction: column; align-items: center; width: 100%; }
         .game-section.active { display: flex; }
@@ -96,7 +100,7 @@
 
         <div id="dart-section" class="game-section">
             <div class="description">불멸의 기록을 위한 극한의 저격</div>
-            <div style="display: flex; gap: 40px; align-items: flex-start;">
+            <div style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; justify-content: center;">
                 <div id="hud">
                     <div class="stat-box"><div class="label">Darts</div><div id="darts-val" class="val">10</div></div>
                     <div class="stat-box"><div class="label">Score</div><div id="total-score" class="val">0</div></div>
@@ -197,22 +201,28 @@
 
     function handleGlobalClick(e) {
         if (!document.getElementById('dart-section').classList.contains('active') || over || darts <= 0) return;
-        if (e.target.closest('#ui-layer')) return;
+        
+        // 클릭한 대상이 입력창(input)이나 버튼(button), 탭 메뉴라면 다트 점수 처리를 무시함
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('.tab-btn')) return;
+
         const tx = mx + sx, ty = my + sy;
         const rect = dartImg.getBoundingClientRect();
         const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
         const dist = Math.sqrt((tx - cx)**2 + (ty - cy)**2);
+        
         const m = document.createElement('div'); m.className = 'hit-mark'; m.style.left = tx + 'px'; m.style.top = ty + 'px';
         document.body.appendChild(m); setTimeout(() => m.remove(), 1000);
+        
         let p = (dist < 20) ? 50 : (dist < 60) ? 25 : (dist < 180) ? Math.floor(Math.random() * 15) + 1 : 0;
         score += p; darts--;
         document.getElementById('hit-val').innerText = p; document.getElementById('total-score').innerText = score;
         document.getElementById('darts-val').innerText = darts;
         baseVx *= 1.01; baseVy *= 1.01;
+        
         if (darts <= 0) {
             over = true; dartImg.style.display = 'none';
             document.getElementById('over-ui').style.display = 'block';
-            document.body.style.cursor = 'auto'; cursor.style.display = 'none';
+            cursor.style.display = 'none';
         }
     }
 
@@ -251,13 +261,7 @@
             btn.disabled = false;
             if(res.every(v => v === res[0])) {
                 const s = res[0];
-                let w = 0;
-                if (s === '♠') w = 500;
-                else if (s === '◆') w = 400;
-                else if (s === '♥') w = 300;
-                else if (s === '♣') w = 200;
-                else w = 0; // ●, ■ 꽝
-
+                let w = (s === '♠') ? 500 : (s === '◆') ? 400 : (s === '♥') ? 300 : (s === '♣') ? 200 : 0;
                 currentWinC = w; 
                 if(w > 0) {
                     document.getElementById('slot-msg').innerText = `SUCCESS! +${w} C`; 
@@ -298,10 +302,12 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(game + '-section').classList.add('active');
         document.getElementById('btn-' + game).classList.add('active');
+        
         const isD = (game === 'dart' && !over);
         dartImg.style.display = isD ? 'block' : 'none';
         cursor.style.display = isD ? 'block' : 'none';
-        document.body.style.cursor = isD ? 'none' : 'auto';
+        // 다트 게임 중에도 입력을 위해 body 커서는 보이도록 유지하거나 상황에 맞게 조절
+        document.body.style.cursor = "auto";
     }
 
     function adminReset(type) { if(prompt("PASS?") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove(); }

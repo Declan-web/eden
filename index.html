@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - RESTRICTED AREA</title>
+    <title>CASINO EDEN - EXTREME FIXED</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -11,7 +11,7 @@
             --glass-bg: rgba(15, 15, 15, 0.9);
         }
 
-        /* 게이트키퍼 (보안 레이어) */
+        /* 보안 레이어 */
         #gatekeeper {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background-color: black; z-index: 99999;
@@ -20,9 +20,8 @@
         #gatekeeper input {
             width: 300px; padding: 15px; background: #111; border: 1px solid #333;
             color: white; text-align: center; font-size: 1.2em; border-radius: 5px;
-            margin-bottom: 20px; outline: none; transition: 0.3s;
+            margin-bottom: 20px; outline: none;
         }
-        #gatekeeper input:focus { border-color: var(--neon-red); box-shadow: 0 0 10px var(--dark-red); }
         #gatekeeper button {
             width: 300px; padding: 15px; background: var(--dark-red); color: white;
             border: none; font-weight: bold; cursor: pointer; border-radius: 5px;
@@ -82,8 +81,7 @@
         .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
         .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; }
         .slot-item { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 4.5em; flex-shrink: 0; }
-        .diamond-item { font-size: 3.5em !important; }
-
+        
         #slot-msg { height: 40px; color: var(--dark-red); margin-bottom: 10px; font-weight: bold; font-size: 1.2em; }
         
         .leaderboard { width: 850px; margin-top: 30px; background: var(--glass-bg); padding: 30px; border-radius: 15px; border: 1px solid #222; }
@@ -172,48 +170,51 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 다트 및 기본 변수
     const dartImg = document.getElementById('moving-dart');
     const cursor = document.getElementById('custom-cursor');
     const dSize = 420; 
     let posX = Math.random() * (window.innerWidth - dSize), posY = Math.random() * (window.innerHeight - dSize);
     let vx = (Math.random() * 4 + 28) * (Math.random() > 0.5 ? 1 : -1);
     let vy = (Math.random() * 4 + 28) * (Math.random() > 0.5 ? 1 : -1);
-    let rot = 0, score = 0, darts = 10, over = false, currentWinC = 0;
-    let mx = 0, my = 0, sx = 0, sy = 0, accessed = false;
+    let rot = 0, score = 0, darts = 10, over = false, currentWinC = 0, accessed = false;
+    let mx = 0, my = 0, sx = 0, sy = 0;
 
-    // 패스워드 확인 함수
     function verifyAccess() {
-        const pass = document.getElementById('access-pass').value;
-        if(pass === "1119") {
+        if(document.getElementById('access-pass').value === "1119") {
             accessed = true;
             document.getElementById('gatekeeper').style.display = 'none';
             switchTab(localStorage.getItem('activeGameTab') || 'dart');
-        } else {
-            alert("ACCESS DENIED");
-            document.getElementById('access-pass').value = '';
-        }
+        } else { alert("ACCESS DENIED"); }
     }
 
     window.onmousemove = (e) => { mx = e.clientX; my = e.clientY; };
 
     function updateCursor() {
-        if(!accessed) { requestAnimationFrame(updateCursor); return; }
-        sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
-        sx *= 0.9; sy *= 0.9;
-        cursor.style.left = (mx + sx) + 'px'; 
-        cursor.style.top = (my + sy) + 'px';
+        if(accessed) {
+            sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
+            sx *= 0.9; sy *= 0.9;
+            cursor.style.left = (mx + sx) + 'px'; 
+            cursor.style.top = (my + sy) + 'px';
+        }
         requestAnimationFrame(updateCursor);
     }
 
     function moveDart() {
-        if (over || !accessed || !document.getElementById('dart-section').classList.contains('active')) {
-            requestAnimationFrame(moveDart); return;
+        if (!over && accessed && document.getElementById('dart-section').classList.contains('active')) {
+            posX += vx; posY += vy; rot += 35;
+            
+            // 벽 충돌 판정 및 위치 보정 (화면 이탈 방지)
+            if (posX <= 0) { posX = 0; vx *= -1.01; }
+            if (posX >= window.innerWidth - dSize) { posX = window.innerWidth - dSize; vx *= -1.01; }
+            if (posY <= 0) { posY = 0; vy *= -1.01; }
+            if (posY >= window.innerHeight - dSize) { posY = window.innerHeight - dSize; vy *= -1.01; }
+
+            // 극한 속도 상한선 제어 (물리 버그 방지)
+            if(Math.abs(vx) > 50) vx = vx > 0 ? 45 : -45;
+            if(Math.abs(vy) > 50) vy = vy > 0 ? 45 : -45;
+
+            dartImg.style.transform = `translate(${posX}px, ${posY}px) rotate(${rot}deg)`;
         }
-        posX += vx; posY += vy; rot += 35;
-        if (posX <= 0 || posX >= window.innerWidth - dSize) vx *= -1.02;
-        if (posY <= 0 || posY >= window.innerHeight - dSize) vy *= -1.02;
-        dartImg.style.transform = `translate(${posX}px, ${posY}px) rotate(${rot}deg)`;
         requestAnimationFrame(moveDart);
     }
 
@@ -221,14 +222,13 @@
         if (!accessed || !document.getElementById('dart-section').classList.contains('active') || over || darts <= 0) return;
         if (e.target.closest('#ui-layer')) return;
 
-        const targetX = mx + sx; const targetY = my + sy;
+        const tx = mx + sx, ty = my + sy;
         const rect = dartImg.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const dist = Math.sqrt((targetX - centerX)**2 + (targetY - centerY)**2);
+        const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+        const dist = Math.sqrt((tx - cx)**2 + (ty - cy)**2);
 
         const m = document.createElement('div'); 
-        m.className = 'hit-mark'; m.style.left = targetX + 'px'; m.style.top = targetY + 'px';
+        m.className = 'hit-mark'; m.style.left = tx + 'px'; m.style.top = ty + 'px';
         document.body.appendChild(m);
         setTimeout(() => m.remove(), 1000);
 
@@ -246,11 +246,12 @@
         }
     }
 
+    // 슬롯머신 및 기타 로직 (기존 유지)
     const slotItems = ['♠','◆','♥','♣','●','■']; 
     function initReels() {
         document.querySelectorAll('.slot-reel').forEach(r => {
             r.innerHTML = '';
-            for(let j=0; j<20; j++) {
+            for(let j=0; j<30; j++) {
                 const sym = slotItems[Math.floor(Math.random()*slotItems.length)];
                 const d = document.createElement('div');
                 d.className = 'slot-item' + (sym === '◆' ? ' diamond-item' : '');
@@ -269,11 +270,10 @@
             const final = slotItems[Math.floor(Math.random()*slotItems.length)];
             res.push(final);
             reel.lastElementChild.innerText = final;
-            reel.lastElementChild.className = 'slot-item' + (final === '◆' ? ' diamond-item' : '');
             reel.style.transition = "none"; reel.style.top = "0px";
             void reel.offsetWidth; 
             reel.style.transition = `top ${2 + (i-1)*0.4}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-            reel.style.top = "-3040px";
+            reel.style.top = "-4640px";
         }
         setTimeout(() => {
             btn.disabled = false;
@@ -286,7 +286,6 @@
             res.forEach((v, i) => {
                 const r = document.getElementById('reel'+(i+1));
                 r.style.transition = "none"; r.style.top = "0px"; r.firstElementChild.innerText = v;
-                r.firstElementChild.className = 'slot-item' + (v === '◆' ? ' diamond-item' : '');
             });
         }, 3500);
     }
@@ -305,10 +304,19 @@
     }
 
     function saveResult(type) {
-        const name = document.getElementById(type === 'dart' ? 'nick-dart' : 'slot-nick').value.trim();
+        const inputId = type === 'dart' ? 'nick-dart' : 'slot-nick';
+        const name = document.getElementById(inputId).value.trim();
         if(!name) return alert("NICKNAME PLEASE");
-        db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').push().set({ name, score: parseInt(type === 'dart' ? score : currentWinC), date: firebase.database.ServerValue.TIMESTAMP }, (err) => {
+        const finalScore = type === 'dart' ? score : currentWinC;
+        const path = type === 'dart' ? 'rankingPro' : 'slotRanking_v3';
+        
+        db.ref(path).push().set({
+            name: name,
+            score: parseInt(finalScore),
+            date: firebase.database.ServerValue.TIMESTAMP
+        }, (err) => {
             if(!err) { alert("RECORDED!"); location.reload(); }
+            else { alert("ERROR: " + err.message); }
         });
     }
 

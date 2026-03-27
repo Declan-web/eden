@@ -24,7 +24,7 @@
         .game-section { display: none; flex-direction: column; align-items: center; }
         .game-section.active { display: flex; }
 
-        /* 다트판 보존 및 캔버스 배경 처리 */
+        /* 다트판 캔버스 */
         #canvas-wrapper { position: relative; width: 600px; height: 600px; border-radius: 50%; border: 10px solid #222; overflow: hidden; cursor: none; background: #000; }
         #hud { width: 250px; background: #1a1a1a; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .stat-box { margin-bottom: 20px; }
@@ -32,16 +32,12 @@
         .val { font-size: 2em; font-weight: bold; color: #fff; }
         #total-score { color: var(--dark-red); }
 
-        /* 슬롯머신 */
+        /* 슬롯머신 스타일 유지 */
         #slot-machine { width: 700px; background: #151515; padding: 50px; border-radius: 20px; border: 8px solid #2a2a2a; text-align: center; box-shadow: inset 0 0 80px #000; }
         .slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
         .slot-window { width: 120px; height: 160px; background: #000; border: 4px solid var(--dark-red); border-radius: 10px; overflow: hidden; position: relative; }
         .slot-reel { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95); }
         .slot-item { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 4.5em; flex-shrink: 0; }
-
-        @media (min-width: 1024px) {
-            .diamond-item { font-size: 3.5em !important; }
-        }
 
         #slot-msg { height: 40px; color: var(--dark-red); margin-bottom: 10px; font-weight: bold; font-size: 1.2em; }
         input { width: 100%; padding: 12px; margin-bottom: 10px; background: #222; border: 1px solid #444; color: white; box-sizing: border-box; }
@@ -65,7 +61,7 @@
     <h1>CASINO EDEN</h1>
 
     <div id="dart-section" class="game-section">
-        <div class="description">불규칙하게 움직이는 판을 뚫고 기록을 새겨라</div>
+        <div class="description">끊임없이 움직이는 전장을 지배하라</div>
         <div id="game-container" style="display: flex; gap: 20px;">
             <div id="canvas-wrapper"><div id="fake-cursor"></div><canvas id="dartBoard" width="600" height="600"></canvas></div>
             <div id="hud">
@@ -115,9 +111,7 @@
             apiKey: "AIzaSyC4cS9GhEAz32y9k11o5B950mbWxULZ1BY",
             databaseURL: "https://eden-dc2c5-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         function switchTab(game) {
@@ -136,10 +130,9 @@
             initReels();
             loop();
             windTick();
-            moveBoardTick(); // 다트판 이동 타이머 시작
         });
 
-        /* --- 다트 게임 로직 (업데이트 버전: 상하좌우 이동 추가) --- */
+        /* --- 다트 게임 로직 (최종 난이도: 화면 전체 튕기기 + 회전) --- */
         const cvs = document.getElementById('dartBoard'); 
         const ctx = cvs.getContext('2d'); 
         const img = new Image(); 
@@ -147,26 +140,33 @@
 
         let score = 0, darts = 10, over = false, mx = 300, my = 300, rot = 0, wx = 0, wy = 0, marks = [];
         
-        // 판의 중심 위치 변수 (기본 300, 300)
+        // 다트판 위치 및 속도 (Bounce 로직용)
         let boardX = 300, boardY = 300;
-        let targetBoardX = 300, targetBoardY = 300;
+        let velX = 1.5, velY = 1.2; // 움직임 속도
+        const boardRadius = 250; // 판의 반지름 (충돌 판정용)
 
         function loop() {
             if(over) return;
             ctx.clearRect(0,0,600,600); 
-            
-            // 다트판 위치를 부드럽게 타겟 위치로 이동 (보간법)
-            boardX += (targetBoardX - boardX) * 0.05;
-            boardY += (targetBoardY - boardY) * 0.05;
+
+            // 다트판 위치 업데이트 (Bounce!)
+            boardX += velX;
+            boardY += velY;
+
+            // 벽 충돌 감지 (중심축 300,300 기준 캔버스 경계 0~600)
+            // 판의 크기를 고려하여 외곽선 근처에서 튕기도록 설정
+            if (boardX + 150 > 600 || boardX - 150 < 0) velX *= -1;
+            if (boardY + 150 > 600 || boardY - 150 < 0) velY *= -1;
 
             ctx.save(); 
             ctx.translate(boardX, boardY); 
-            rot += 0.15; // 회전 속도 약간 증가
+            rot += 0.15; 
             ctx.rotate(rot); 
-            ctx.drawImage(img, -300, -300, 600, 600); 
+            // 다트판 이미지 그리기 (기본 크기보다 약간 작게 해서 여유 공간 확보)
+            ctx.drawImage(img, -200, -200, 400, 400); 
             ctx.restore(); 
 
-            // 명중 지점 표시 (판의 이동에 따라 상대적으로 그려짐)
+            // 명중 지점 그리기 (절대 좌표)
             marks.forEach(m => { 
                 ctx.beginPath(); 
                 ctx.arc(m.x, m.y, 5, 0, Math.PI*2); 
@@ -174,7 +174,7 @@
                 ctx.fill(); ctx.stroke(); 
             }); 
 
-            // 에임 흔들림 (수전증 효과)
+            // 에임 흔들림
             window.tx = mx + (Math.random()-0.5)*150; 
             window.ty = my + (Math.random()-0.5)*150; 
             const cur = document.getElementById('fake-cursor'); 
@@ -182,15 +182,6 @@
             cur.style.top = window.ty+'px'; 
             
             requestAnimationFrame(loop);
-        }
-
-        // 다트판의 목표 위치를 주기적으로 변경 (동서남북 불규칙 이동)
-        function moveBoardTick() {
-            if(over) return;
-            // 중심 300, 300 기준으로 최대 80px 내외로 불규칙하게 이동
-            targetBoardX = 300 + (Math.random() - 0.5) * 160;
-            targetBoardY = 300 + (Math.random() - 0.5) * 160;
-            setTimeout(moveBoardTick, 1500 + Math.random() * 1000);
         }
 
         cvs.onmousemove = (e) => { 
@@ -202,15 +193,15 @@
         cvs.onmousedown = () => {
             if(over || darts <= 0 || !document.getElementById('dart-section').classList.contains('active')) return;
             
-            // 최종 착탄 지점 (에임 + 바람 영향)
             const fx = window.tx + wx; 
             const fy = window.ty + wy; 
             marks.push({x: fx, y: fy}); 
 
-            // 현재 다트판의 중심(boardX, boardY)으로부터의 거리 계산
+            // 현재 움직이는 판의 중심(boardX, boardY)과의 거리 계산
             const d = Math.sqrt((fx - boardX)**2 + (fy - boardY)**2);
             
-            let p = (d < 15) ? 50 : (d < 35) ? 25 : (d < 285) ? Math.floor(Math.random()*20)+1 : 0;
+            // 판의 크기가 이미지에 맞춰 200px(반지름) 정도로 축소되었으므로 판정 거리 수정
+            let p = (d < 10) ? 50 : (d < 25) ? 25 : (d < 190) ? Math.floor(Math.random()*20)+1 : 0;
             
             score += p; darts--; 
             document.getElementById('hit-val').innerText = p; 
@@ -225,15 +216,15 @@
 
         function windTick() { 
             if(over) return; 
-            wx = (Math.random()-0.5)*60; 
-            wy = (Math.random()-0.5)*60; 
+            wx = (Math.random()-0.5)*50; 
+            wy = (Math.random()-0.5)*50; 
             document.getElementById('wind-indicator').innerText = `WIND: ${Math.abs(Math.floor(wx))}m/s`; 
             setTimeout(windTick, 2000); 
         }
 
-        /* --- 슬롯머신 로직 --- */
+        /* --- 슬롯머신 로직 (보존) --- */
         const slotItems = ['♠','◆','♥','♣','●','■']; 
-        const weightedPool = ['♠','◆','◆', '♥','♥','♥', '♣','♣','♣', '♣', '●', '●', '●', '●', '■', '■', '■', '■'];
+        const weightedPool = ['♠','◆','◆', '♥','♥','♥', '♣','♣','♣', '♣', '●', '●', '●', '●', '●', '●', '■', '■', '■', '■', '■', '■'];
 
         function initReels() {
             for(let i=1; i<=4; i++) {
@@ -252,7 +243,6 @@
             document.getElementById('slot-msg').innerText = "ROLLING⋯⋯";
             const btn = document.getElementById('spin-btn'); btn.disabled = true;
             const res = [];
-
             for(let i=1; i<=4; i++) {
                 const reel = document.getElementById('reel'+i);
                 const final = weightedPool[Math.floor(Math.random()*weightedPool.length)];
@@ -285,53 +275,32 @@
             }, 3500);
         }
 
-        /* --- 기록 저장 --- */
+        /* --- 저장 및 관리 로직 (보존) --- */
         function saveResult(type) {
             const nickId = (type === 'dart') ? 'nick-dart' : 'slot-nick';
             const btnId = (type === 'dart') ? 'save-dart-btn' : 'save-slot-btn';
             const name = document.getElementById(nickId).value.trim();
             const btn = document.getElementById(btnId);
-
-            if(!name) return alert("전설의 이름을 입력하세요.");
+            if(!name) return alert("이름을 입력하세요.");
             btn.disabled = true;
-
             const data = {
                 name: name,
                 score: (type === 'dart') ? parseInt(document.getElementById('total-score').innerText) : currentWinC,
                 date: firebase.database.ServerValue.TIMESTAMP
             };
-
-            const path = (type === 'dart') ? 'rankingPro' : 'slotRanking_v3';
-
-            db.ref(path).push().set(data, (error) => {
-                if (error) {
-                    alert("기록 실패: " + error.message);
-                    btn.disabled = false;
-                } else {
-                    alert("전설이 기록되었습니다.");
-                    if(type === 'dart') {
-                        localStorage.setItem('activeGameTab', 'dart');
-                        location.reload();
-                    } else {
-                        document.getElementById('slot-over-ui').style.display = 'none';
-                        document.getElementById(nickId).value = '';
-                        btn.disabled = false;
-                    }
-                }
+            db.ref((type === 'dart') ? 'rankingPro' : 'slotRanking_v3').push().set(data, (error) => {
+                if (error) { alert("기록 실패"); btn.disabled = false; }
+                else { alert("기록 완료"); location.reload(); }
             });
         }
 
         function adminReset(type) {
-            if(prompt("관계자 외 사용 금지.") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove();
+            if(prompt("관리자 코드") === "1119") db.ref(type === 'dart' ? 'rankingPro' : 'slotRanking_v3').remove();
         }
 
         db.ref('rankingPro').on('value', (snap) => {
             const list = document.getElementById('rankList'); list.innerHTML = '';
-            let arr = []; 
-            snap.forEach(c => {
-                let val = c.val();
-                if(val) arr.push(val);
-            });
+            let arr = []; snap.forEach(c => { if(c.val()) arr.push(c.val()); });
             arr.sort((a,b) => b.score - a.score).slice(0,10).forEach((v, i) => {
                 list.innerHTML += `<li><span>#${i+1} ${v.name}</span><strong>${v.score} PT</strong></li>`;
             });
@@ -339,11 +308,7 @@
 
         db.ref('slotRanking_v3').on('value', (snap) => {
             const list = document.getElementById('slotRankList'); list.innerHTML = '';
-            let arr = []; 
-            snap.forEach(c => {
-                let val = c.val();
-                if(val) arr.push(val);
-            });
+            let arr = []; snap.forEach(c => { if(c.val()) arr.push(c.val()); });
             arr.reverse().forEach((v) => {
                 list.innerHTML += `<li><span>${v.name}</span><strong>${v.score} C</strong></li>`;
             });

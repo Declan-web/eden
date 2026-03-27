@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CASINO EDEN - VELOCITY WAVE</title>
+    <title>CASINO EDEN - PROBABILITY CONTROL</title>
     <style>
         :root {
             --dark-red: #7a0000;
@@ -175,15 +175,10 @@
     const cursor = document.getElementById('custom-cursor');
     const dSize = 420; 
     let posX = Math.random() * (window.innerWidth - dSize), posY = Math.random() * (window.innerHeight - dSize);
-    
-    // 기본 물리 변수
     let baseVx = (Math.random() * 4 + 20) * (Math.random() > 0.5 ? 1 : -1);
     let baseVy = (Math.random() * 4 + 20) * (Math.random() > 0.5 ? 1 : -1);
     let rot = 0, score = 0, darts = 10, over = false, currentWinC = 0, accessed = false;
-    let mx = 0, my = 0, sx = 0, sy = 0;
-    
-    // 속도 파동(Wave) 변수
-    let waveTime = 0;
+    let mx = 0, my = 0, sx = 0, sy = 0, waveTime = 0;
 
     function verifyAccess() {
         if(document.getElementById('access-pass').value === "1119") {
@@ -212,7 +207,6 @@
     }
 
     window.onmousemove = (e) => { mx = e.clientX; my = e.clientY; };
-
     function updateCursor() {
         if(accessed) {
             sx += (Math.random() - 0.5) * 20; sy += (Math.random() - 0.5) * 20;
@@ -224,20 +218,11 @@
 
     function moveDart() {
         if (!over && accessed && document.getElementById('dart-section').classList.contains('active')) {
-            // 사이클에 따른 속도 변동 (Math.sin 활용)
             waveTime += 0.02;
-            const speedMultiplier = 1.25 + Math.sin(waveTime) * 0.75; // 0.5배 ~ 2.0배 사이를 왕복
-            
-            posX += baseVx * speedMultiplier; 
-            posY += baseVy * speedMultiplier; 
-            rot += 20 * speedMultiplier;
-
-            // 벽 충돌 및 위치 보정
-            if (posX <= 0) { posX = 0; baseVx *= -1; }
-            if (posX >= window.innerWidth - dSize) { posX = window.innerWidth - dSize; baseVx *= -1; }
-            if (posY <= 0) { posY = 0; baseVy *= -1; }
-            if (posY >= window.innerHeight - dSize) { posY = window.innerHeight - dSize; baseVy *= -1; }
-
+            const speedMultiplier = 1.25 + Math.sin(waveTime) * 0.75;
+            posX += baseVx * speedMultiplier; posY += baseVy * speedMultiplier; rot += 20 * speedMultiplier;
+            if (posX <= 0 || posX >= window.innerWidth - dSize) { posX = posX <= 0 ? 0 : window.innerWidth - dSize; baseVx *= -1; }
+            if (posY <= 0 || posY >= window.innerHeight - dSize) { posY = posY <= 0 ? 0 : window.innerHeight - dSize; baseVy *= -1; }
             dartImg.style.transform = `translate(${posX}px, ${posY}px) rotate(${rot}deg)`;
         }
         requestAnimationFrame(moveDart);
@@ -246,23 +231,17 @@
     function handleGlobalClick(e) {
         if (!accessed || !document.getElementById('dart-section').classList.contains('active') || over || darts <= 0) return;
         if (e.target.closest('#ui-layer')) return;
-
         const tx = mx + sx, ty = my + sy;
         const rect = dartImg.getBoundingClientRect();
         const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
         const dist = Math.sqrt((tx - cx)**2 + (ty - cy)**2);
-
         const m = document.createElement('div'); m.className = 'hit-mark'; m.style.left = tx + 'px'; m.style.top = ty + 'px';
         document.body.appendChild(m); setTimeout(() => m.remove(), 1000);
-
         let p = (dist < 20) ? 50 : (dist < 60) ? 25 : (dist < 180) ? Math.floor(Math.random() * 15) + 1 : 0;
         score += p; darts--;
         document.getElementById('hit-val').innerText = p; document.getElementById('total-score').innerText = score;
         document.getElementById('darts-val').innerText = darts;
-
-        // 적중 시 기본 속도 미세 가속 (여전히 전체적인 파동은 유지됨)
         baseVx *= 1.01; baseVy *= 1.01;
-
         if (darts <= 0) {
             over = true; dartImg.style.display = 'none';
             document.getElementById('over-ui').style.display = 'block';
@@ -270,7 +249,11 @@
         }
     }
 
+    /* --- 슬롯머신 로직 (확률 제어 시스템) --- */
     const slotItems = ['♠','◆','♥','♣','●','■']; 
+    // 특정 기호의 개수를 늘리면 당첨 확률이 변합니다.
+    const weightedPool = ['♠','♠','◆','◆','♥','♥','♥','♣','♣','♣','●','●','●','■','■','■'];
+
     function initReels() {
         document.querySelectorAll('.slot-reel').forEach(r => {
             r.innerHTML = '';
@@ -285,12 +268,13 @@
 
     function spinSlot() {
         document.getElementById('slot-over-ui').style.display = 'none';
-        document.getElementById('slot-msg').innerText = "ROLLING...";
+        document.getElementById('slot-msg').innerText = "ROLLING⋯⋯";
         const btn = document.getElementById('spin-btn'); btn.disabled = true;
         const res = [];
         for(let i=1; i<=4; i++) {
             const reel = document.getElementById('reel'+i);
-            const final = slotItems[Math.floor(Math.random()*slotItems.length)];
+            // 가중치 풀에서 무작위 선택
+            const final = weightedPool[Math.floor(Math.random()*weightedPool.length)];
             res.push(final);
             reel.lastElementChild.innerText = final;
             reel.lastElementChild.className = 'slot-item' + (final === '◆' ? ' diamond-item' : '');

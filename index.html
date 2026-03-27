@@ -24,7 +24,7 @@
         .game-section { display: none; flex-direction: column; align-items: center; }
         .game-section.active { display: flex; }
 
-        /* 다트판 보존 */
+        /* 다트판 보존 및 캔버스 배경 처리 */
         #canvas-wrapper { position: relative; width: 600px; height: 600px; border-radius: 50%; border: 10px solid #222; overflow: hidden; cursor: none; background: #000; }
         #hud { width: 250px; background: #1a1a1a; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .stat-box { margin-bottom: 20px; }
@@ -65,7 +65,7 @@
     <h1>CASINO EDEN</h1>
 
     <div id="dart-section" class="game-section">
-        <div class="description">열 발의 다트로 남기는 불멸의 기록</div>
+        <div class="description">불규칙하게 움직이는 판을 뚫고 기록을 새겨라</div>
         <div id="game-container" style="display: flex; gap: 20px;">
             <div id="canvas-wrapper"><div id="fake-cursor"></div><canvas id="dartBoard" width="600" height="600"></canvas></div>
             <div id="hud">
@@ -136,36 +136,104 @@
             initReels();
             loop();
             windTick();
+            moveBoardTick(); // 다트판 이동 타이머 시작
         });
 
-        /* --- 다트 게임 로직 --- */
-        const cvs = document.getElementById('dartBoard'); const ctx = cvs.getContext('2d'); const img = new Image(); img.src = 'image_6.png';
+        /* --- 다트 게임 로직 (업데이트 버전: 상하좌우 이동 추가) --- */
+        const cvs = document.getElementById('dartBoard'); 
+        const ctx = cvs.getContext('2d'); 
+        const img = new Image(); 
+        img.src = 'image_6.png';
+
         let score = 0, darts = 10, over = false, mx = 300, my = 300, rot = 0, wx = 0, wy = 0, marks = [];
+        
+        // 판의 중심 위치 변수 (기본 300, 300)
+        let boardX = 300, boardY = 300;
+        let targetBoardX = 300, targetBoardY = 300;
+
         function loop() {
             if(over) return;
-            ctx.clearRect(0,0,600,600); ctx.save(); ctx.translate(300,300); rot += 0.12; ctx.rotate(rot); ctx.drawImage(img, -300, -300, 600, 600); ctx.restore();
-            marks.forEach(m => { ctx.beginPath(); ctx.arc(m.x, m.y, 5, 0, Math.PI*2); ctx.fillStyle="rgba(255,0,0,0.7)"; ctx.fill(); ctx.stroke(); });
-            window.tx = mx + (Math.random()-0.5)*150; window.ty = my + (Math.random()-0.5)*150;
-            const cur = document.getElementById('fake-cursor'); cur.style.left = window.tx+'px'; cur.style.top = window.ty+'px';
+            ctx.clearRect(0,0,600,600); 
+            
+            // 다트판 위치를 부드럽게 타겟 위치로 이동 (보간법)
+            boardX += (targetBoardX - boardX) * 0.05;
+            boardY += (targetBoardY - boardY) * 0.05;
+
+            ctx.save(); 
+            ctx.translate(boardX, boardY); 
+            rot += 0.15; // 회전 속도 약간 증가
+            ctx.rotate(rot); 
+            ctx.drawImage(img, -300, -300, 600, 600); 
+            ctx.restore(); 
+
+            // 명중 지점 표시 (판의 이동에 따라 상대적으로 그려짐)
+            marks.forEach(m => { 
+                ctx.beginPath(); 
+                ctx.arc(m.x, m.y, 5, 0, Math.PI*2); 
+                ctx.fillStyle="rgba(255,0,0,0.7)"; 
+                ctx.fill(); ctx.stroke(); 
+            }); 
+
+            // 에임 흔들림 (수전증 효과)
+            window.tx = mx + (Math.random()-0.5)*150; 
+            window.ty = my + (Math.random()-0.5)*150; 
+            const cur = document.getElementById('fake-cursor'); 
+            cur.style.left = window.tx+'px'; 
+            cur.style.top = window.ty+'px'; 
+            
             requestAnimationFrame(loop);
         }
-        cvs.onmousemove = (e) => { const r = cvs.getBoundingClientRect(); mx = e.clientX-r.left; my = e.clientY-r.top; };
+
+        // 다트판의 목표 위치를 주기적으로 변경 (동서남북 불규칙 이동)
+        function moveBoardTick() {
+            if(over) return;
+            // 중심 300, 300 기준으로 최대 80px 내외로 불규칙하게 이동
+            targetBoardX = 300 + (Math.random() - 0.5) * 160;
+            targetBoardY = 300 + (Math.random() - 0.5) * 160;
+            setTimeout(moveBoardTick, 1500 + Math.random() * 1000);
+        }
+
+        cvs.onmousemove = (e) => { 
+            const r = cvs.getBoundingClientRect(); 
+            mx = e.clientX-r.left; 
+            my = e.clientY-r.top; 
+        };
+
         cvs.onmousedown = () => {
             if(over || darts <= 0 || !document.getElementById('dart-section').classList.contains('active')) return;
-            const fx = window.tx + wx, fy = window.ty + wy; marks.push({x: fx, y: fy});
-            const d = Math.sqrt((fx-300)**2 + (fy-300)**2);
+            
+            // 최종 착탄 지점 (에임 + 바람 영향)
+            const fx = window.tx + wx; 
+            const fy = window.ty + wy; 
+            marks.push({x: fx, y: fy}); 
+
+            // 현재 다트판의 중심(boardX, boardY)으로부터의 거리 계산
+            const d = Math.sqrt((fx - boardX)**2 + (fy - boardY)**2);
+            
             let p = (d < 15) ? 50 : (d < 35) ? 25 : (d < 285) ? Math.floor(Math.random()*20)+1 : 0;
+            
             score += p; darts--; 
             document.getElementById('hit-val').innerText = p; 
             document.getElementById('total-score').innerText = score; 
             document.getElementById('darts-val').innerText = darts;
-            if(darts <= 0) { over = true; document.getElementById('over-ui').style.display='block'; }
+            
+            if(darts <= 0) { 
+                over = true; 
+                document.getElementById('over-ui').style.display='block'; 
+            }
         };
-        function windTick() { if(over) return; wx = (Math.random()-0.5)*50; wy = (Math.random()-0.5)*50; document.getElementById('wind-indicator').innerText = `WIND: ${Math.abs(Math.floor(wx))}m/s`; setTimeout(windTick, 2500); }
 
-        /* --- 슬롯머신 로직 (보상 수치 수정) --- */
+        function windTick() { 
+            if(over) return; 
+            wx = (Math.random()-0.5)*60; 
+            wy = (Math.random()-0.5)*60; 
+            document.getElementById('wind-indicator').innerText = `WIND: ${Math.abs(Math.floor(wx))}m/s`; 
+            setTimeout(windTick, 2000); 
+        }
+
+        /* --- 슬롯머신 로직 --- */
         const slotItems = ['♠','◆','♥','♣','●','■']; 
-        const weightedPool = ['♠','◆','◆', '♥','♥','♥', '♣','♣','♣', '♣', '●', '●', '●', '●', '●', '●', '■', '■', '■', '■', '■', '■'];
+        const weightedPool = ['♠','◆','◆', '♥','♥','♥', '♣','♣','♣', '♣', '●', '●', '●', '●', '■', '■', '■', '■'];
 
         function initReels() {
             for(let i=1; i<=4; i++) {
@@ -201,7 +269,6 @@
                 const isWin = res.every(v => v === res[0]);
                 if(isWin) {
                     const s = res[0];
-                    // 보상 밸런스 수정됨
                     let w = (s==='♠')?1000:(s==='◆')?800:(s==='♥')?600:(s==='♣')?400:0;
                     if(w > 0) {
                         currentWinC = w;
